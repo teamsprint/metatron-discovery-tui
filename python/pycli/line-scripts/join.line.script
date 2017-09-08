@@ -1,0 +1,25 @@
+ds post
+
+product
+select * from product
+df post
+store flow
+[0]
+
+tr post
+[0]
+[1]
+ds post [1]
+contract
+select * from contract1 limit 10000
+tr post
+[3]
+[1]
+tr put [2]
+append
+join leftSelectCol: product_name, product_01_code rightSelectCol: contract_id, product_01_code condition: product_01_code = product_01_code joinType:'inner' dataset2: [4]
+ss post [2]
+default
+test_join
+
+hdfs://localhost:9000/tmp/hdfsDir

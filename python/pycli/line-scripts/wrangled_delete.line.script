@@ -1,0 +1,15 @@
+ds post
+
+store
+select * from store
+df post
+storeflow
+[0]
+
+tr post
+[0]
+[1]
+tr put [2]
+append
+rename col:store_code to:a
+ds delete [2]

@@ -1,0 +1,17 @@
+{
+    "sql": "SELECT * from store",
+    "rules": [
+        "rename col:store_code to:'a'",
+        "rename col:detail_store_code to:'b'",
+        "rename col:customer_id to:'c'"
+    ],
+    "charset": "UTF-8",
+    "dbName": "default",
+    "tblName": "test_snapshot_description",
+    "format": "ORC",
+    "compression": "SNAPPY",
+    "ssType": "HIVE",
+    "mode": "OVERWRITE",
+    "partKeys": [],
+    "extHdfsDir": "hdfs://localhost:9000/tmp/hdfsDir"
+}

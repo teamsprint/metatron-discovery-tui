@@ -1,0 +1,31 @@
+ds post
+
+store1
+select * from store
+df post
+store flow
+[0]
+
+tr post
+[0]
+[1]
+ds post [1]
+store2
+select * from store
+tr post
+[0]
+[1]
+ds post [1]
+store3
+select * from store
+tr post
+[0]
+[1]
+tr put [2]
+append
+union masterCol: store_code, detail_store_code, customer_id dataset2: [4], [6]
+ss post [2]
+default
+test_union
+
+hdfs://localhost:9000/tmp/hdfsDir

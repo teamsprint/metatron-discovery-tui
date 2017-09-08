@@ -1,0 +1,467 @@
+#!/usr/bin/env python
+#encoding:utf8
+
+import argparse
+
+import requests
+import requests.auth
+
+import util
+from util import *
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', help='print out more responses in detail', action='store_true')
+parser.add_argument('-V', '--verbose-more', help='print out all responses in detail', action='store_true')
+parser.add_argument('-s', '--server', help='API server hostname (default: localhost)', default='localhost')
+parser.add_argument('-p', '--port', help='API server port (default: 8180)', default='8180')
+parser.add_argument('-l', '--line-script', help='line script file')
+parser.add_argument('-d', '--snapshot-description', help='snapshot descrpition file')
+args = parser.parse_args()
+
+verbose = 'more' if args.verbose_more else 'on' if args.verbose else 'off'
+server = args.server
+port = args.port
+line_script = args.line_script
+desc_filename = args.snapshot_description
+
+print 'server=', server
+print 'port=', port
+
+if line_script:
+    print 'line_script=', line_script
+    util.line_script_file = open(line_script, 'r')
+
+if desc_filename:
+    print 'snapshot_description=', desc_filename
+    run_snapshot_descripton_file(desc_filename)
+
+usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|delete|put} [uuid]'
+
+def get_token():
+    hdr = {'Content-Type': 'application/json', 'Authorization': 'Basic cG9sYXJpc19jbGllbnQ6cG9sYXJpcw=='}
+    r = requests.post(
+        'http://localhost:8180/oauth/token?grant_type=password&scope=write&username=polaris&password=polaris',
+        headers=hdr)
+    return r.json()['access_token']
+
+hdr = {}
+hdr['Authorization'] = "bearer " + get_token()
+hdr['Content-Type'] = 'application/json'
+hdr['Accept'] = 'application/json'
+
+def get_uuid(s):
+    if s[0] == '[':
+        reg_idx = int(s[1:-1])
+        return util.reg[reg_idx]['uuid']
+    return s
+
+def get_href(dsId):
+    r = requests.get('http://%s:%s/api/preparationdatasets/%s?projection=detail' % (server, port, dsId), headers=hdr)
+    return r.json()['_links']['self']['href']
+
+def get_createdTime(dsId):
+    r = requests.get('http://%s:%s/api/preparationdatasets/%s?projection=detail' % (server, port, dsId), headers=hdr)
+    return r.json()['createdTime']
+
+def get_dsName(dsId):
+    r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+    return r.json()['dsName']
+
+def get_upstreamDsIds(d):
+    r = requests.get(d['_links']['upstreams']['href'], headers=hdr)
+    d = r.json()
+    return d
+
+def get_dataflow_href(dfId):
+    r = requests.get('http://%s:%s/api/preparationdataflows/%s?projection=detail' % (server, port, dfId), headers=hdr)
+    return r.json()['_links']['self']['href']
+
+def print_registry():
+    for i in range(0, util.reg_cnt):
+        d = util.reg[i]
+        print '[%d]' % i, 'type=', d['type'], 'name=', d['name'], 'uuid=', d['uuid'], 'createdTime=', d['createdTime']
+
+def handle_set(words):
+    global verbose
+
+    if len(words) == 1:
+        print 'usage: set verbose [off|on|more]'
+        return
+    elif len(words) == 2:
+        print 'verbose is', verbose
+        return
+    elif words[2] not in ['more', 'on', 'off']:
+        print 'usage: set verbose [off|on|more]'
+        return
+
+    verbose = words[2]
+
+def handle_dataset(words):
+    if len(words) == 1:
+        print 'usage: ds {get|post|delete} [dsId]'
+        return
+    method = words[1]
+
+    if method == 'get':
+        if len(words) == 2:
+            # dataset listing
+            r = requests.get('http://%s:%s/api/preparationdatasets' % (server, port), headers=hdr)
+            datasets = r.json()['_embedded']['preparationdatasets']
+            for d in datasets:
+                print_dict(d, verbose, ['_links'], ['dsName', 'dsId', 'importType', 'queryStmt'])
+                reg_append(d['dsType'], d['dsName'], d['dsId'], d['createdTime'])
+        else:
+            # get dataset detail
+            dsId = get_uuid(words[2])
+            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+            d = r.json()
+            d['upstreamDsIds'] = get_upstreamDsIds(d)
+            print_dict(r.json(), verbose, \
+                       ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+                       ['dsType', 'dsName', 'importType', 'queryStmt', 'totalLines', 'totalBytes', 'upstreamDsIds'])
+
+    elif method == 'post':
+        d = {}
+
+        if len(words) == 3:
+            s = words[2]
+        else:
+            s = get_line('enter dfId (press enter if none): ')
+
+        if s != '':
+            d['creatorDfId'] = get_uuid(s)
+            d['dataflows'] = []
+            d['dataflows'].append(get_dataflow_href(get_uuid(s)))
+
+        s = get_line('enter dsName: ')
+        if s == '': return
+        d['dsName'] = s
+
+        d['dsType'] = 'IMPORTED'
+        d['importType'] = 'HIVE'
+        d['rsType'] = 'SQL'
+
+        s = get_line('enter queryStmt: ')
+        if s == '': return
+        d['queryStmt'] = s
+
+        print '<<< post datasets request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+
+        r = requests.post('http://%s:%s/api/preparationdatasets' % (server, port), data=json.dumps(d), headers=hdr)
+
+        print '<<< post datasets response >>>'
+        print_dict(r.json(), verbose, \
+                   ['_links', 'matrixResponse', 'createdBy', 'modifiedBy', 'modifiedTime'], \
+                   ['dsId', 'dsType', 'dsName', 'importType', 'queryStmt', 'totalLines', 'totalBytes', 'createdTime'])
+
+        print 'response status code: ', r.status_code
+        if r.status_code == 201:
+            reg_append('IMPORTED', r.json()['dsName'], r.json()['dsId'], r.json()['createdTime'])
+
+    elif method == 'delete':
+        if len(words) == 2:
+            # delete all datasets --> forbidden 403
+            r = requests.delete('http://%s:%s/api/preparationdatasets' % (server, port), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+        else:
+            # delete a dataset
+            dsId = get_uuid(words[2])
+            r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+
+            print 'response status code: ', r.status_code
+            if r.status_code == 200:
+                reg_del(dsId)
+
+
+def handle_dataflow(words):
+    if len(words) == 1:
+        print 'usage: df {post|get} [dfId]'
+        return
+    method = words[1]
+
+    if method == 'post':
+        # dataflow posting
+        d = {}
+
+        s = get_line('enter dfName: ')
+        if s == '': return
+        d['dfName'] = s
+
+        d['datasets'] = []
+        while True:
+            s = get_line('enter dataset uuid: ')
+            if s == '':
+                break
+            dsId = get_uuid(s)
+            href = get_href(dsId)
+            d['datasets'].append(href)
+
+        print '<<< post dataflows request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+
+        r = requests.post('http://%s:%s/api/preparationdataflows' % (server, port), json.dumps(d), headers=hdr)
+
+        print '<<< post datasets response >>>'
+        print json.dumps(r.json(), sort_keys=True, indent=4)
+
+        print 'response status code: ', r.status_code
+        assert r.status_code == 201, r.status_code
+        reg_append('dataflow', r.json()['dfName'], r.json()['dfId'], r.json()['createdTime'])
+
+    elif method == 'get':
+        if len(words) == 2:
+            # dataflow listing
+            r = requests.get('http://%s:%s/api/preparationdataflows' % (server, port), headers=hdr)
+
+            dataflows = r.json()['_embedded']['preparationdataflows']
+            for dataflow in dataflows:
+                datasets_href = dataflow['_links']['datasets']['href']
+                r = requests.get(datasets_href, headers=hdr)
+
+                datasets = r.json()['_embedded']['preparationdatasets']
+                pruned_datasets = []
+                for dataset in datasets:
+                    pruned_datasets.append(prune_dict(dataset, verbose, keep_list=['dsId', 'dsName', 'dsType', 'createdTime']))
+                    reg_append(dataset['dsType'], dataset['dsName'], dataset['dsId'], dataset['createdTime'])
+                dataflow['datasets'] = pruned_datasets
+
+                print_dict(dataflow, verbose, ['_links'], ['dfName', 'dfId', 'datasets', 'createdTime'])
+                reg_append('dataflow', dataflow['dfName'], dataflow['dfId'], dataflow['createdTime'])
+        else:
+            # get dataflow detail
+            dsId = get_uuid(words[2])
+            r = requests.get('http://%s:%s/api/preparationdataflows/%s' % (server, port, dsId), headers=hdr)
+            dataflow = r.json()
+
+            datasets_href = dataflow['_links']['datasets']['href']
+            r = requests.get(datasets_href, headers=hdr)
+            datasets = r.json()['_embedded']['preparationdatasets']
+
+            pruned_datasets = []
+            for dataset in datasets:
+                pruned_datasets.append(prune_dict(dataset, verbose, keep_list=['dsId', 'dsName', 'dsType', 'createdTime']))
+                reg_append(dataset['dsType'], dataset['dsName'], dataset['dsId'], dataset['createdTime'])
+            dataflow['datasets'] = pruned_datasets
+
+            print_dict(dataflow, verbose, ['_links'], ['dfName', 'dfId', 'datasets', 'createdTime'])
+            reg_append('dataflow', dataflow['dfName'], dataflow['dfId'], dataflow['createdTime'])
+
+    elif method == 'delete':
+        if len(words) == 2:
+            # delete all dataflows --> forbidden 403
+            r = requests.delete('http://%s:%s/api/preparationdataflows' % (server, port), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+        else:
+            # delete a dataflow
+            dsId = get_uuid(words[2])
+            r = requests.delete('http://%s:%s/api/preparationdataflows/%s' % (server, port, dsId), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+
+            print 'response status code: ', r.status_code
+            if r.status_code == 200:
+                reg_del(dsId)
+
+def handle_transform(words):
+    if len(words) == 1:
+        print 'usage: tr {post|get|put} [dsId]'
+        return
+    method = words[1]
+
+    if method == 'post':
+        # new wrangled dataset
+        d = {}
+
+        s = get_line('enter importedDsId: ')
+        if s == '': return
+        importedDsId = get_uuid(s)
+
+        s = get_line('enter dfId: ')
+        if s == '': return
+        dfId = get_uuid(s)
+        d['dfId'] = dfId
+
+        print '<<< post transform request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+        r = requests.post('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, importedDsId), json.dumps(d), headers=hdr)
+
+        print '<<< post transtorm response >>>'
+        d = r.json()
+        print_dict(d, verbose, \
+                   ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+                   ['dsName', 'dsId', 'importType', 'queryStmt'])
+
+        print 'response status code: ', r.status_code
+        assert r.status_code == 200, r.status_code
+
+        wrangledDsId = d['wrangledDsId']
+        createdTime = get_createdTime(wrangledDsId)
+        reg_append('WRANGLED', get_dsName(wrangledDsId), wrangledDsId, createdTime)
+
+        # upstream is mandatory
+        r = requests.post('http://%s:%s/api/preparationdataflows/%s/datasets/%s/upstream/%s' % \
+                          (server, port, dfId, wrangledDsId, importedDsId), headers=hdr)
+        assert r.status_code == 201, r.status_code
+
+    elif method == 'get':
+        # load wrangled dataset
+        if len(words) == 2:
+            s = get_line('enter wrangledDsId: ')
+            if s == '': return
+            wrangledDsId = get_uuid(s)
+        else:
+            wrangledDsId = get_uuid(words[2])
+
+        print '<<< get transtorm request >>>'
+        print 'GET http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId)
+
+        r = requests.get('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId), headers=hdr)
+
+        print '<<< get transtorm response >>>'
+        process_transform_response(r, verbose, words)
+
+    elif method == 'put':
+        if len(words) == 2:
+            s = get_line('enter wrangledDsId: ')
+            if s == '': return
+            wrangledDsId = get_uuid(s)
+        else:
+            wrangledDsId = get_uuid(words[2])
+
+        d = get_transform_args()
+        if d == None:
+            return
+
+        print '<<< put transform request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+        r = requests.put('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId), json.dumps(d), headers=hdr)
+
+        print '<<< put transtorm response >>>'
+        process_transform_response(r, verbose, words)
+
+def handle_snapshot(words):
+    if len(words) == 1:
+        print 'usage: ss {post} [wrangledDsId]'
+        return
+    method = words[1]
+
+    d = {}
+
+    if method == 'post':
+        if len(words) == 2:
+            s = get_line('enter wrangledDsId: ')
+            if s == '': return
+            wrangledDsId = get_uuid(s)
+        else:
+            wrangledDsId = get_uuid(words[2])
+
+        s = get_line('enter dbName: ')
+        if s == '': return
+        d['dbName'] = s
+
+        s = get_line('enter tblName: ')
+        if s == '': return
+        d['tblName'] = s
+
+        d['partKeys'] = []
+        while True:
+            s = get_line('enter partition key: ')
+            if s == '':
+                break
+            d['partKeys'].append(s)
+
+        s = get_line('enter extHdfsDir: ')
+        if s == '': return
+        d['extHdfsDir'] = s
+
+        d['charset'] = 'UTF-8'
+        d['format'] = 'ORC'
+        d['compression'] = 'SNAPPY'
+        d['ssType'] = 'HIVE'
+        d['mode'] = 'OVERWRITE'
+
+        print '<<< snapshot request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+
+        r = requests.post('http://%s:%s/api/preparationdatasets/%s' % (server, port, wrangledDsId),\
+                          data=json.dumps(d), headers=hdr)
+
+        print '<<< snapshot response >>>'
+        d = r.json()
+        print_dict(d, verbose, \
+                   ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+                   ['ssId', 'launchTime'])
+
+        print 'response status code: ', r.status_code
+
+        if 'errorMsg' in d:
+            print 'errorMsg:', d['errorMsg']
+            if 'exceptionClassName' in d:
+                print 'exceptionClassName:', d['exceptionClassName']
+        else:
+            reg_append('snapshot', get_dsName(wrangledDsId), d['ssId'], d['launchTime'])
+
+    elif method == 'delete':
+        if len(words) == 2:
+            # delete all snapshots --> forbidden 403
+            r = requests.delete('http://%s:%s/api/preparationsnapshots' % (server, port), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+        else:
+            # delete a snapshot
+            dsId = get_uuid(words[2])
+            r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, dsId), headers=hdr)
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+
+            print 'response status code: ', r.status_code
+            if r.status_code == 200:
+                reg_del(dsId)
+
+    elif method == 'get':
+        if len(words) == 2:
+            # snapshot listing
+            r = requests.get('http://%s:%s/api/preparationsnapshots' % (server, port), headers=hdr)
+            snapshots = r.json()['_embedded']['preparationsnapshots']
+            for d in snapshots:
+                print_dict(d, verbose, ['_links'], ['ssName', 'ssId', 'dataset'])
+                reg_append('snapshot', d['ssName'], d['ssId'], d['launchTime'])
+        else:
+            # get snapshot detail
+            ssId = get_uuid(words[2])
+            r = requests.get('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
+            print_dict(r.json(), verbose, ['_links'], ['ssName', 'ssId', 'dataset'])
+
+
+# interactive shell start!
+while True:
+    line = get_line('pycli> ', strip=False)
+    if not line:
+        break
+
+    words = line.lower().split()
+    if len(words) == 0:
+        continue
+    cmd = words[0]
+
+    try:
+        if cmd in ['exit', 'quit']:
+            break
+        elif cmd in ['registry', 'reg', 're', 'r']:
+            print_registry()
+        elif cmd in ['set']:
+            handle_set(words)
+        elif cmd in ['datasets', 'dataset', 'ds']:
+            handle_dataset(words)
+        elif cmd in ['dataflows', 'dataflow', 'df']:
+            handle_dataflow(words)
+        elif cmd in ['transform', 'tr']:
+            handle_transform(words)
+        elif cmd in ['snapshot', 'ss']:
+            handle_snapshot(words)
+        else:
+            print usage
+    except Exception as e:
+        print e.message
+        pass
+
+#eof

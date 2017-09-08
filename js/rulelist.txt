@@ -1,0 +1,4 @@
+APPEND, ,rename col:column1 to:'a'
+APPEND, ,rename col:column2 to:'b'
+APPEND, ,rename col:column3 to:'c'
+APPEND, ,rename col:c to:'d'

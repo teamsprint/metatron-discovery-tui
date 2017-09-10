@@ -1,0 +1,15 @@
+# 서버를 띄운 직후에만 이 테스트가 가능: ds get을 하면 저장되어 있던 모든 dataset들을 registry에 저장하기 때문.
+ds get
+tr get [1]
+tr put [1]
+redo
+tr put [1]
+update
+rename col:customer_id to:x
+tr put [1]
+undo
+tr put [1]
+undo
+tr put [1]
+update
+rename col:customer_id to:y

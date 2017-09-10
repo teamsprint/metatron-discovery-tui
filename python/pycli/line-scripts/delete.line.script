@@ -1,0 +1,37 @@
+ds post
+
+store
+select * from store
+df post
+store flow
+[0]
+
+tr post
+[0]
+[1]
+tr put [2]
+append
+rename col:store_code to:a
+tr put [2]
+append
+rename col:detail_store_code to:b
+tr put [2]
+append
+rename col:customer_id to:c
+tr put [2]
+undo
+tr put [2]
+undo
+tr get [2]
+tr put [2]
+redo
+tr put [2]
+update
+rename col:customer_id to:x
+tr put [2]
+undo
+tr put [2]
+undo
+tr put [2]
+update
+rename col:customer_id to:y

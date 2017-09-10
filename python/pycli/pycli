@@ -396,9 +396,11 @@ def handle_snapshot(words):
         print 'response status code: ', r.status_code
 
         if 'errorMsg' in d:
+            print '>>>>>>>>>>>>>>>>>>>> Error Occured >>>>>>>>>>>>>>>>>>>>'
             print 'errorMsg:', d['errorMsg']
             if 'exceptionClassName' in d:
                 print 'exceptionClassName:', d['exceptionClassName']
+            print '<<<<<<<<<<<<<<<<<<<< Error Occured <<<<<<<<<<<<<<<<<<<<'
         else:
             reg_append('snapshot', get_dsName(wrangledDsId), d['ssId'], d['launchTime'])
 
@@ -437,9 +439,8 @@ while True:
     line = get_line('pycli> ', strip=False)
     if not line:
         break
-
     words = line.lower().split()
-    if len(words) == 0:
+    if len(words) == 0 or words[0].startswith('#'):
         continue
     cmd = words[0]
 

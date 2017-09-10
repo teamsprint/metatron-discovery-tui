@@ -1,7 +1,7 @@
 ds post
 
 product
-select * from product
+select * from product limit 500
 df post
 store flow
 [0]
@@ -11,7 +11,7 @@ tr post
 [1]
 ds post [1]
 contract
-select * from contract1 limit 10000
+select * from contract1 limit 1000
 tr post
 [3]
 [1]

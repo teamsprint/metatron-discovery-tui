@@ -1,7 +1,7 @@
 ds post
 
 store1
-select * from store
+select * from store limit 2500
 df post
 store flow
 [0]
@@ -11,13 +11,13 @@ tr post
 [1]
 ds post [1]
 store2
-select * from store
+select * from store limit 2500
 tr post
 [0]
 [1]
 ds post [1]
 store3
-select * from store
+select * from store limit 2500
 tr post
 [0]
 [1]

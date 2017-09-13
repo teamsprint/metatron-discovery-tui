@@ -40,7 +40,7 @@ usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|del
 def get_token():
     hdr = {'Content-Type': 'application/json', 'Authorization': 'Basic cG9sYXJpc19jbGllbnQ6cG9sYXJpcw=='}
     r = requests.post(
-        'http://localhost:8180/oauth/token?grant_type=password&scope=write&username=polaris&password=polaris',
+        'http://%s:%s/oauth/token?grant_type=password&scope=write&username=polaris&password=polaris' % (server, port),
         headers=hdr)
     return r.json()['access_token']
 
@@ -105,7 +105,7 @@ def handle_dataset(words):
     if method == 'get':
         if len(words) == 2:
             # dataset listing
-            r = requests.get('http://%s:%s/api/preparationdatasets' % (server, port), headers=hdr)
+            r = requests.get('http://%s:%s/api/preparationdatasets?sort=createdTime' % (server, port), headers=hdr)
             datasets = r.json()['_embedded']['preparationdatasets']
             for d in datasets:
                 print_dict(d, verbose, ['_links'], ['dsName', 'dsId', 'importType', 'queryStmt'])
@@ -339,6 +339,28 @@ def handle_transform(words):
 
         print '<<< put transtorm response >>>'
         process_transform_response(r, verbose, words)
+
+    elif method == 'preview':
+        if len(words) == 2:
+            s = get_line('enter wrangledDsId: ')
+            if s == '': return
+            wrangledDsId = get_uuid(s)
+        else:
+            wrangledDsId = get_uuid(words[2])
+
+        d = get_transform_args()
+        if d == None:
+            return
+        elif 'ruleString' in d and str(d['ruleString']).startswith('join') == False:
+            print 'preview accepts only join rules'
+            return
+
+        print '<<< put transform preview request >>>'
+        print json.dumps(d, sort_keys=True, indent=4)
+        r = requests.put('http://%s:%s/api/preparationdatasets/%s/transform/preview' % (server, port, wrangledDsId), json.dumps(d), headers=hdr)
+
+        print '<<< put transtorm preview response >>>'
+        process_transform_response(r, verbose, words, join_preview=True)
 
 def handle_snapshot(words):
     if len(words) == 1:

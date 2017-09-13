@@ -88,11 +88,11 @@ def get_transform_args():
         s = get_line('enter action: ')
         if s == '': return None
         d['op'] = str.upper(s)
-        if d['op'] in ['APPEND', 'UPDATE', 'DELETE', 'JUMP', 'UNDO', 'REDO']:
+        if d['op'] in ['APPEND', 'UPDATE', 'DELETE', 'JUMP', 'UNDO', 'REDO', 'CANCEL']:
             break
-        print 'invalid transform rule:', s.split()[0], ': available: APPEND, UPDATE, DELETE, JUMP, UNDO, REDO'
+        print 'invalid transform rule:', s.split()[0], ': available: APPEND, UPDATE, DELETE, JUMP, UNDO, REDO, CANCEL'
 
-    if d['op'] in ['DELETE', 'UNDO', 'REDO']:
+    if d['op'] in ['DELETE', 'UNDO', 'REDO', 'CANCEL']:
         return d
 
     if d['op'] == 'JUMP':
@@ -181,13 +181,12 @@ def print_rule_list(d):
     if 'ruleStringInfos' not in d:
         return
 
+    print 'undoable=%s redoable=%s' % (d['undoable'], d['redoable'])
     print 'transform rule list:'
-    i = 0
-    for info in d['ruleStringInfos']:
-        print '[%d]: %s' % (i, info['ruleString'])
-        i += 1
+    for i, info in enumerate(d['ruleStringInfos']):
+        print ' %s [%d]: %s' % ('cur =>' if  i == d['ruleCurIdx'] else '      ', i, info['ruleString'])
 
-def process_transform_response(r, verbose, words):
+def process_transform_response(r, verbose, words, join_preview=False):
     d = r.json()
 
     if 'errorMsg' in d:
@@ -196,9 +195,10 @@ def process_transform_response(r, verbose, words):
             print 'exceptionClassName:', d['exceptionClassName']
         return
 
-    print_dict(d, verbose, \
-               ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
-               ['ruleCurIdx', 'ruleCurStringInfos'])
+    if not join_preview:
+        print_dict(d, verbose, \
+                   ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+                   ['ruleCurIdx', 'ruleCurStringInfos'])
 
     # print(d['matrixResponse']['columns']['type'])
     target_cnt = 3

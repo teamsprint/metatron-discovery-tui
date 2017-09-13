@@ -190,9 +190,7 @@ def process_transform_response(r, verbose, words, join_preview=False):
     d = r.json()
 
     if 'errorMsg' in d:
-        print 'errorMsg:', d['errorMsg']
-        if 'exceptionClassName' in d:
-            print 'exceptionClassName:', d['exceptionClassName']
+        print_error(d)
         return
 
     if not join_preview:
@@ -259,5 +257,12 @@ def run_snapshot_descripton_file(desc_filename):
     except Exception as e:
         print e
         exit(-1)
+
+def print_error(d):
+    print '>>>>>>>>>>>>>>>>>>>> Error Occured >>>>>>>>>>>>>>>>>>>>'
+    print 'errorMsg:', d['errorMsg']
+    if 'exceptionClassName' in d:
+        print 'exceptionClassName:', d['exceptionClassName']
+    print '<<<<<<<<<<<<<<<<<<<< Error Occured <<<<<<<<<<<<<<<<<<<<'
 
 #eof

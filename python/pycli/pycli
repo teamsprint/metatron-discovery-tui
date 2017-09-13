@@ -76,10 +76,45 @@ def get_dataflow_href(dfId):
     r = requests.get('http://%s:%s/api/preparationdataflows/%s?projection=detail' % (server, port, dfId), headers=hdr)
     return r.json()['_links']['self']['href']
 
-def print_registry():
-    for i in range(0, util.reg_cnt):
-        d = util.reg[i]
-        print '[%d]' % i, 'type=', d['type'], 'name=', d['name'], 'uuid=', d['uuid'], 'createdTime=', d['createdTime']
+def handle_registry(words):
+    if len(words) == 1:
+        for i in range(0, util.reg_cnt):
+            d = util.reg[i]
+            print '[%d]' % i, 'type=', d['type'], 'name=', d['name'], 'uuid=', d['uuid'], 'createdTime=', d['createdTime']
+    elif words[1] == 'clear':
+        for i in range(0, util.reg_cnt):
+            d = util.reg[i]
+            if d['type'] == 'snapshot':
+                ssId = d['uuid']
+                r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
+                print json.dumps(r.json(), sort_keys=True, indent=4)
+                print 'response status code: ', r.status_code
+
+        for i in range(0, util.reg_cnt):
+            d = util.reg[i]
+            if d['type'] == 'WRANGLED':
+                dsId = d['uuid']
+                r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+                print json.dumps(r.json(), sort_keys=True, indent=4)
+                print 'response status code: ', r.status_code
+
+        for i in range(0, util.reg_cnt):
+            d = util.reg[i]
+            if d['type'] == 'IMPORTED':
+                dsId = d['uuid']
+                r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+                print json.dumps(r.json(), sort_keys=True, indent=4)
+                print 'response status code: ', r.status_code
+
+        for i in range(0, util.reg_cnt):
+            d = util.reg[i]
+            if d['type'] == 'dataflow':
+                dfId = d['uuid']
+                r = requests.delete('http://%s:%s/api/preparationdataflows/%s' % (server, port, dfId), headers=hdr)
+                print 'response status code: ', r.status_code
+
+        del util.reg[:]
+        util.reg_cnt = 0
 
 def handle_set(words):
     global verbose
@@ -310,7 +345,9 @@ def handle_transform(words):
                    ['dsName', 'dsId', 'importType', 'queryStmt'])
 
         print 'response status code: ', r.status_code
-        assert r.status_code == 200, r.status_code
+        if 'errorMsg' in d:
+            print_error(d)
+            return
 
         wrangledDsId = d['wrangledDsId']
         createdTime = get_createdTime(wrangledDsId)
@@ -436,14 +473,7 @@ def handle_snapshot(words):
                    ['ssId', 'launchTime'])
 
         print 'response status code: ', r.status_code
-
-        if 'errorMsg' in d:
-            print '>>>>>>>>>>>>>>>>>>>> Error Occured >>>>>>>>>>>>>>>>>>>>'
-            print 'errorMsg:', d['errorMsg']
-            if 'exceptionClassName' in d:
-                print 'exceptionClassName:', d['exceptionClassName']
-            print '<<<<<<<<<<<<<<<<<<<< Error Occured <<<<<<<<<<<<<<<<<<<<'
-        else:
+        if r.status_code == 201:
             reg_append('snapshot', get_dsName(wrangledDsId), d['ssId'], d['launchTime'])
 
     elif method == 'delete':
@@ -453,13 +483,13 @@ def handle_snapshot(words):
             print json.dumps(r.json(), sort_keys=True, indent=4)
         else:
             # delete a snapshot
-            dsId = get_uuid(words[2])
-            r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, dsId), headers=hdr)
+            ssId = get_uuid(words[2])
+            r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
             print json.dumps(r.json(), sort_keys=True, indent=4)
 
             print 'response status code: ', r.status_code
             if r.status_code == 200:
-                reg_del(dsId)
+                reg_del(ssId)
 
     elif method == 'get':
         if len(words) == 2:
@@ -492,7 +522,7 @@ while True:
         if cmd in ['exit', 'quit']:
             break
         elif cmd in ['registry', 'reg', 're', 'r']:
-            print_registry()
+            handle_registry(words)
         elif cmd in ['set']:
             handle_set(words)
         elif cmd in ['datasets', 'dataset', 'ds']:

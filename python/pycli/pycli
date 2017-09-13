@@ -35,7 +35,7 @@ if desc_filename:
     print 'snapshot_description=', desc_filename
     run_snapshot_descripton_file(desc_filename)
 
-usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|delete|put} [uuid]'
+usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|delete|put|preview} [uuid]'
 
 def get_token():
     hdr = {'Content-Type': 'application/json', 'Authorization': 'Basic cG9sYXJpc19jbGllbnQ6cG9sYXJpcw=='}
@@ -93,6 +93,8 @@ def handle_set(words):
     elif words[2] not in ['more', 'on', 'off']:
         print 'usage: set verbose [off|on|more]'
         return
+    else:
+        print usage
 
     verbose = words[2]
 
@@ -173,7 +175,8 @@ def handle_dataset(words):
             print 'response status code: ', r.status_code
             if r.status_code == 200:
                 reg_del(dsId)
-
+    else:
+        print usage
 
 def handle_dataflow(words):
     if len(words) == 1:
@@ -262,10 +265,12 @@ def handle_dataflow(words):
             print 'response status code: ', r.status_code
             if r.status_code == 200:
                 reg_del(dsId)
+    else:
+        print usage
 
 def handle_transform(words):
     if len(words) == 1:
-        print 'usage: tr {post|get|put} [dsId]'
+        print 'usage: tr {post|get|put|preview} [dsId]'
         return
     method = words[1]
 
@@ -362,6 +367,9 @@ def handle_transform(words):
         print '<<< put transtorm preview response >>>'
         process_transform_response(r, verbose, words, join_preview=True)
 
+    else:
+        print usage
+
 def handle_snapshot(words):
     if len(words) == 1:
         print 'usage: ss {post} [wrangledDsId]'
@@ -455,6 +463,8 @@ def handle_snapshot(words):
             r = requests.get('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
             print_dict(r.json(), verbose, ['_links'], ['ssName', 'ssId', 'dataset'])
 
+    else:
+        print usage
 
 # interactive shell start!
 while True:

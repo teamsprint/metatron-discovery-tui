@@ -161,6 +161,18 @@ def handle_dataset(words):
         if r.status_code == 201:
             reg_append('IMPORTED', r.json()['dsName'], r.json()['dsId'], r.json()['createdTime'])
 
+        if d['creatorDfId'] != '':
+            dsIds = {}
+            dsIds['dsIds'] = []
+            dsIds['dsIds'].append(r.json()['dsId'])
+            r = requests.post('http://%s:%s/api/preparationdataflows/%s/add_datasets' % (server, port,d['creatorDfId']), data=json.dumps(dsIds), headers=hdr)
+
+            print '<<< add_datasets response >>>'
+            print json.dumps(r.json(), sort_keys=True, indent=4)
+
+            print 'response status code: ', r.status_code
+            assert r.status_code == 200, r.status_code
+
     elif method == 'delete':
         if len(words) == 2:
             # delete all datasets --> forbidden 403

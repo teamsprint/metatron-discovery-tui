@@ -5,6 +5,7 @@ import argparse
 
 import requests
 import requests.auth
+from time import gmtime, strftime
 
 import util
 from util import *
@@ -128,8 +129,6 @@ def handle_set(words):
     elif words[2] not in ['more', 'on', 'off']:
         print 'usage: set verbose [off|on|more]'
         return
-    else:
-        print usage
 
     verbose = words[2]
 
@@ -434,6 +433,8 @@ def handle_snapshot(words):
             wrangledDsId = get_uuid(s)
         else:
             wrangledDsId = get_uuid(words[2])
+
+        d['ssName'] = get_dsName(wrangledDsId) + strftime(" %Y%m%d_%H%M%S", gmtime())
 
         s = get_line('enter dbName: ')
         if s == '': return

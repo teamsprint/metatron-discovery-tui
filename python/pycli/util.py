@@ -43,7 +43,9 @@ def delete(d, delete_list):
 
 def get_line(prompt, strip=True):
     if line_script_file:
+        sys.stdout.write(prompt)
         line = line_script_file.readline()
+        print line.strip()
     else:
         sys.stdout.write(prompt)
         line = sys.stdin.readline()

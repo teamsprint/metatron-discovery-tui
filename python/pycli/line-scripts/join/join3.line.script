@@ -1,30 +1,30 @@
-# 100 * 100
 ds post
 
 product
-select * from product limit 100
-df post
-store flow
-[0]
-
-tr post
-[0]
-[1]
+select * from product limit 500
 ds post
 
 contract
-select * from contract1 limit 100
-tr post
-[3]
+select * from contract limit 1000
+df post
+store flow
+[0]
 [1]
-tr preview [2]
+
+tr post
+[0]
+[2]
+tr post
+[1]
+[2]
+tr preview [3]
 append
 join leftSelectCol: product_name, product_01_code rightSelectCol: contract_id, product_01_code condition: product_01_code = product_01_code joinType:'inner' dataset2: [4]
-tr put [2]
+tr put [3]
 append
 join leftSelectCol: product_name, product_01_code rightSelectCol: contract_id, product_01_code condition: product_01_code = product_01_code joinType:'inner' dataset2: [4]
-ss post [2]
+ss post [3]
 default
-test_join2
+test_join3
 
 hdfs://localhost:9000/tmp/hdfsDir

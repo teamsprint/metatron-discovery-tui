@@ -461,21 +461,36 @@ def handle_snapshot(words):
         d['ssType'] = 'HIVE'
         d['mode'] = 'OVERWRITE'
 
-        print '<<< snapshot request >>>'
+        print '<<< transform snapshot request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
 
-        r = requests.post('http://%s:%s/api/preparationdatasets/%s' % (server, port, wrangledDsId),\
+        r = requests.post('http://%s:%s/api/preparationdatasets/%s/transform/snapshot' % (server, port, wrangledDsId), \
                           data=json.dumps(d), headers=hdr)
 
-        print '<<< snapshot response >>>'
+        print '<<< transform snapshot response >>>'
+        d = r.json()
+        print_dict(d, verbose, keep_list=['ssId'])
+        print 'response status code: ', r.status_code
+
+        for dsId in d['fullDsIds']:
+            print '<<< temp dataset delete request >>>'
+            r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), data=json.dumps(d), headers=hdr)
+            print '<<< temp dataset delete response >>>'
+            print 'full dataset ' + r.json() + ' has been deleted.'
+            print 'response status code: ', r.status_code
+
+        print '<<< snapshot get request >>>'
+        ssId = d['ssId']
+        r = requests.get('http://%s:%s/api/preparationsnapshots/%s?projection=detail' % (server, port, ssId), data=json.dumps(d), headers=hdr)
+        print '<<< transform snapshot response >>>'
         d = r.json()
         print_dict(d, verbose, \
-                   ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
-                   ['ssId', 'launchTime'])
+                   ['_links', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+                   ['ssName', 'elapsedTime'])
 
         print 'response status code: ', r.status_code
-        if r.status_code == 201:
-            reg_append('snapshot', get_dsName(wrangledDsId), d['ssId'], d['launchTime'])
+        if r.status_code == 200:
+            reg_append('snapshot', d['ssName'], ssId, d['launchTime'])
 
     elif method == 'delete':
         if len(words) == 2:

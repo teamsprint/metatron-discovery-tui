@@ -1,7 +1,7 @@
 ds post
 
 store
-select * from store limit 50;
+select * from store
 df post
 store flow
 [0]
@@ -13,3 +13,8 @@ tr get [2]
 tr put [2]
 append
 rename col:store_code to:a
+ss post [2]
+default
+test_snapshot
+
+hdfs://localhost:9000/tmp/hdfsDir

@@ -88,7 +88,6 @@ def handle_registry(words):
             if d['type'] == 'snapshot':
                 ssId = d['uuid']
                 r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
-                print json.dumps(r.json(), sort_keys=True, indent=4)
                 print 'response status code: ', r.status_code
 
         for i in range(0, util.reg_cnt):
@@ -518,9 +517,29 @@ def handle_snapshot(words):
         else:
             # get snapshot detail
             ssId = get_uuid(words[2])
-            r = requests.get('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
-            print_dict(r.json(), verbose, ['_links'], ['ssName', 'ssId', 'dataset'])
+            r = requests.get('http://%s:%s/api/preparationsnapshots/%s?projection=detail' % (server, port, ssId), headers=hdr)
+            d = r.json()
+            d['ssId'] = ssId
+            print_dict(d, verbose, ['_links'], ['ssName', 'ssId', 'dsName', 'launchTime', 'elapsedTime', 'dsName'])
 
+            dataset_href = d['_links']['dataset']['href']
+            r = requests.get(dataset_href, headers=hdr)
+            d = r.json()
+
+            wrangledDsId = d['dsId']
+            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, wrangledDsId), headers=hdr)
+            d = r.json()
+            print_dict(d, verbose, ['_links'], ['dsId', 'dsName', 'dsType', 'createdTime', 'dsName'])
+
+            r = requests.get(d['_links']['upstreams']['href'], headers=hdr)
+            d = r.json()
+
+            importedDsId = d['_embedded']['preparationstreams'][0]['upstreamDsId']
+            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, importedDsId), headers=hdr)
+            d = r.json()
+
+            if d['dsType'] == 'IMPORTED' and d['importType'] == 'HIVE':
+                print_dict(d, verbose, ['_links'], ['dsId', 'dsName', 'dsType', 'importType', 'createdTime', 'queryStmt'])
     else:
         print usage
 

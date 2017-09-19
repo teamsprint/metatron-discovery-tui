@@ -1,5 +1,6 @@
 {
-    "sql": "SELECT * from store",
+    "sql": "SELECT * from store limit 50",
+    "dsName": "store",
     "rules": [
         "rename col:store_code to:'a'",
         "rename col:detail_store_code to:'b'",

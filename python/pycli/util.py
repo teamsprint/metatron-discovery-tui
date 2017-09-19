@@ -228,7 +228,7 @@ def run_snapshot_descripton_file(desc_filename):
 
         print >> f, 'ds post'
         print >> f
-        print >> f, 'tmp ds for %s' % desc_filename
+        print >> f, d['dsName']
         print >> f, d['sql']
         print >> f, 'df post'
         print >> f, 'tmp df for %s' % desc_filename

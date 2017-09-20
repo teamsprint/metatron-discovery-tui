@@ -196,7 +196,12 @@ def process_transform_response(r, verbose, words, join_preview=False):
         return
 
     if not join_preview:
-        print_dict(d, verbose, \
+        # to protect matrixRespone
+        tmp = {}
+        for key in d:
+            tmp[key] = d[key]
+
+        print_dict(tmp, verbose, \
                    ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
                    ['ruleCurIdx', 'ruleCurStringInfos'])
 

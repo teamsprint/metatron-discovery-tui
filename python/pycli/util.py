@@ -56,20 +56,20 @@ def get_line(prompt, strip=True):
         return line
 
 help = { "rename"   : "rename col: speed to: 'HP'",
-         'drop'     : "drop col: speed'",
-         'settype'  : "settype col: itemNo type: integer'",
+         'drop'     : "drop col: speed",
+         'settype'  : "settype col: 'itemNo' type: integer'",
          'set'      : "set col: country value: if (country=='US', 'USA', country)",
          'derive'   : "derive value: point * 2 as: 'double'",
          'replace'  : "replace col: birth on '2015' with: '15' global: true'",
          'split'    : "split col: birth on: '-' limit: 2",
-         'merge'    : "merge col: d1, d2, d3 with: '_' as: birth_merged",
+         'merge'    : "merge col: d1, d2, d3 with: '_' as: 'birth_merged'",
          'extract'  : "extract col: birth on: /2[0-9][0-9][0-9]/ limit: 2",
          'keep'     : "keep row: if (speed >= 300 || price >= 50000)",
          'delete'   : "delete row: if (speed < 300 && price < 50000)",
          'nest'     : "nest: col: year, month, day into: map as 'map_birth'",
          'unnest'   : "unnest: col: map_birth into: map idx: 'year'",
          'header'   : "header rownum: 1",
-         'join'     : "join leftSelectCol: itemNo,name,speed rigthSelectCol: itemNo,name,weight condition: itemNo=itemNo joinType: ‘inner’ dataset2: [2]",
+         'join'     : "join leftSelectCol: itemNo,name,speed rigthSelectCol: itemNo,name,weight condition: itemNo=itemNo && weight=weight joinType: ‘inner’ dataset2: [2]",
          'union'    : "union masterCol: itemNo, weight, speed dataset2: [4], [6]",
          'countpattern': "countpattern: col: country on: [a-z] ignoreCase: true",
          'sort'     : "sort order: col1, col2",
@@ -204,6 +204,8 @@ def process_transform_response(r, verbose, words, join_preview=False):
         print_dict(tmp, verbose, \
                    ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
                    ['ruleCurIdx', 'ruleCurStringInfos'])
+
+    print 'result_cnt:', len(d['matrixResponse']['columns'][0]['value'])
 
     # print(d['matrixResponse']['columns']['type'])
     target_cnt = 3

@@ -1,0 +1,15 @@
+ds post
+
+store
+select *, case when store_code = '001' then null else store_code end as x from store limit 100
+df post
+flow 06
+[0]
+
+tr post
+[0]
+[1]
+tr get [2]
+tr put [2]
+append
+rename col:store_code to:a

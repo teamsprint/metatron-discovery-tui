@@ -272,6 +272,8 @@ def print_error(d):
     print 'errorMsg:', d['errorMsg']
     if 'exceptionClassName' in d:
         print 'exceptionClassName:', d['exceptionClassName']
+    print 'full json:'
+    print d
     print '<<<<<<<<<<<<<<<<<<<< Error Occured <<<<<<<<<<<<<<<<<<<<'
 
 #eof

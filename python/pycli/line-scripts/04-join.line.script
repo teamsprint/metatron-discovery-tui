@@ -1,9 +1,9 @@
 ds post
 
-store
+store 04
 select * from store limit 50
 df post
-flow 03
+flow 04
 [0]
 
 tr post
@@ -15,8 +15,8 @@ append
 rename col:store_code to:'a'
 ds post
 [1]
-contract
-select * from contract1 limit 50
+contract 04
+select * from contract1 limit 200
 tr post
 [3]
 [1]
@@ -38,8 +38,8 @@ append
 merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
 ds post
 [1]
-product
-select * from product limit 50
+product 04
+select * from product limit 200
 tr post
 [5]
 [1]
@@ -59,3 +59,9 @@ rename col:product_04_code to:'p4'
 tr put [6]
 append
 merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
+tr preview [4]
+append
+join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]
+tr put [4]
+append
+join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]

@@ -1,9 +1,9 @@
 ds post
 
-store
+store 52
 select * from store
 df post
-store flow
+flow 52
 [0]
 
 tr post

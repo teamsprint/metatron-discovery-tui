@@ -1,9 +1,9 @@
 ds post
 
-store
+store 71
 select * from store
 df post
-store flow
+flow 71
 [0]
 
 tr post
@@ -15,6 +15,6 @@ append
 rename col:store_code to:a
 ss post [2]
 default
-test_snapshot
+snapshot 71
 
 hdfs://localhost:9000/tmp/hdfsDir

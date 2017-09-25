@@ -3,7 +3,7 @@ ds post
 store
 select * from store
 df post
-store flow
+flow 51
 [0]
 
 tr post
@@ -26,12 +26,13 @@ tr get [2]
 tr put [2]
 redo
 tr put [2]
-update
-rename col:customer_id to:x
+redo
+tr get [2]
 tr put [2]
 undo
 tr put [2]
 undo
+tr get [2]
 tr put [2]
-update
-rename col:customer_id to:y
+append
+rename col:detail_store_code to:d

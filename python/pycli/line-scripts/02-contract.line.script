@@ -1,6 +1,6 @@
 ds post
 
-store
+store 02
 select * from store limit 50
 df post
 flow 02
@@ -15,7 +15,7 @@ append
 rename col:store_code to:'a'
 ds post
 [1]
-contract
+contract 02
 select * from contract1 limit 50
 tr post
 [3]
@@ -36,3 +36,8 @@ rename col:product_04_code to:'p4'
 tr put [4]
 append
 merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
+ss post [4]
+default
+test_snapshot
+
+hdfs://localhost:9000/tmp/hdfsDir

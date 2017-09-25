@@ -1,6 +1,6 @@
 ds post
 
-store
+store 06
 select *, case when store_code = '001' then null else store_code end as x from store limit 100
 df post
 flow 06

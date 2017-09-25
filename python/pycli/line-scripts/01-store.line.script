@@ -1,6 +1,6 @@
 ds post
 
-store
+store 01
 select * from store limit 50
 df post
 flow 01

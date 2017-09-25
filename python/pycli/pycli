@@ -56,25 +56,52 @@ def get_uuid(s):
         return util.reg[reg_idx]['uuid']
     return s
 
+def check_response(r):
+    print 'response status code: ', r.status_code
+    d = r.json()
+    if 'errorMsg' in d:
+        print_error(d)
+        exit(-1)
+
+def req_get(url_detail):
+    r = requests.get('http://%s:%s/api/%s' % (server, port, url_detail), headers=hdr)
+    check_response(r)
+    return r
+
+def req_post(url_detail, data):
+    r = requests.post('http://%s:%s/api/%s' % (server, port, url_detail), data, headers=hdr)
+    check_response(r)
+    return r
+
+def req_put(url_detail, data):
+    r = requests.put('http://%s:%s/api/%s' % (server, port, url_detail), data, headers=hdr)
+    check_response(r)
+    return r
+
+def req_delete(url_detail):
+    r = requests.delete('http://%s:%s/api/%s' % (server, port, url_detail), headers=hdr)
+    check_response(r)
+    return r
+
 def get_href(dsId):
-    r = requests.get('http://%s:%s/api/preparationdatasets/%s?projection=detail' % (server, port, dsId), headers=hdr)
+    r = req_get('preparationdatasets/%s?projection=detail' % dsId)
     return r.json()['_links']['self']['href']
 
 def get_createdTime(dsId):
-    r = requests.get('http://%s:%s/api/preparationdatasets/%s?projection=detail' % (server, port, dsId), headers=hdr)
+    r = req_get('preparationdatasets/%s?projection=detail' % dsId)
     return r.json()['createdTime']
 
 def get_dsName(dsId):
-    r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+    r = req_get('preparationdatasets/%s' % dsId)
     return r.json()['dsName']
 
 def get_upstreamDsIds(d):
     r = requests.get(d['_links']['upstreams']['href'], headers=hdr)
-    d = r.json()
-    return d
+    check_response(r)
+    return r.json()
 
 def get_dataflow_href(dfId):
-    r = requests.get('http://%s:%s/api/preparationdataflows/%s?projection=detail' % (server, port, dfId), headers=hdr)
+    r = req_get('preparationdataflows/%s?projection=detail' % dfId)
     return r.json()['_links']['self']['href']
 
 def handle_registry(words):
@@ -87,31 +114,26 @@ def handle_registry(words):
             d = util.reg[i]
             if d['type'] == 'snapshot':
                 ssId = d['uuid']
-                r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
-                print 'response status code: ', r.status_code
 
         for i in range(0, util.reg_cnt):
             d = util.reg[i]
             if d['type'] == 'WRANGLED':
                 dsId = d['uuid']
-                r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+                r = req_delete('preparationdatasets/%s' % dsId)
                 print json.dumps(r.json(), sort_keys=True, indent=4)
-                print 'response status code: ', r.status_code
 
         for i in range(0, util.reg_cnt):
             d = util.reg[i]
             if d['type'] == 'IMPORTED':
                 dsId = d['uuid']
-                r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+                r = req_delete('preparationdatasets/%s' % dsId)
                 print json.dumps(r.json(), sort_keys=True, indent=4)
-                print 'response status code: ', r.status_code
 
         for i in range(0, util.reg_cnt):
             d = util.reg[i]
             if d['type'] == 'dataflow':
                 dfId = d['uuid']
-                r = requests.delete('http://%s:%s/api/preparationdataflows/%s' % (server, port, dfId), headers=hdr)
-                print 'response status code: ', r.status_code
+                r = req_delete('preparationdataflows/%s' % dfId)
 
         del util.reg[:]
         util.reg_cnt = 0
@@ -140,7 +162,7 @@ def handle_dataset(words):
     if method == 'get':
         if len(words) == 2:
             # dataset listing
-            r = requests.get('http://%s:%s/api/preparationdatasets?sort=createdTime' % (server, port), headers=hdr)
+            r = req_get('preparationdatasets?sort=createdTime')
             datasets = r.json()['_embedded']['preparationdatasets']
             for d in datasets:
                 print_dict(d, verbose, ['_links'], ['dsName', 'dsId', 'importType', 'queryStmt'])
@@ -148,7 +170,7 @@ def handle_dataset(words):
         else:
             # get dataset detail
             dsId = get_uuid(words[2])
-            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+            r = req_get('preparationdatasets/%s' % dsId)
             d = r.json()
             d['upstreamDsIds'] = get_upstreamDsIds(d)
             print_dict(r.json(), verbose, \
@@ -183,14 +205,13 @@ def handle_dataset(words):
         print '<<< post datasets request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
 
-        r = requests.post('http://%s:%s/api/preparationdatasets' % (server, port), data=json.dumps(d), headers=hdr)
+        r = req_post('preparationdatasets', data=json.dumps(d))
 
         print '<<< post datasets response >>>'
         print_dict(r.json(), verbose, \
                    ['_links', 'matrixResponse', 'createdBy', 'modifiedBy', 'modifiedTime'], \
                    ['dsId', 'dsType', 'dsName', 'importType', 'queryStmt', 'totalLines', 'totalBytes', 'createdTime'])
 
-        print 'response status code: ', r.status_code
         if r.status_code == 201:
             reg_append('IMPORTED', r.json()['dsName'], r.json()['dsId'], r.json()['createdTime'])
 
@@ -198,26 +219,24 @@ def handle_dataset(words):
             dsIds = {}
             dsIds['dsIds'] = []
             dsIds['dsIds'].append(r.json()['dsId'])
-            r = requests.post('http://%s:%s/api/preparationdataflows/%s/add_datasets' % (server, port,d['creatorDfId']), data=json.dumps(dsIds), headers=hdr)
+            r = req_post('preparationdataflows/%s/add_datasets' % d['creatorDfId'], data=json.dumps(dsIds), headers=hdr)
 
             print '<<< add_datasets response >>>'
-            print json.dumps(r.json(), sort_keys=True, indent=4)
-
-            print 'response status code: ', r.status_code
+            print_dict(r.json(), verbose, \
+                       ['datasets', 'createdBy', 'modifiedBy', 'modifiedTime'], \
+                       ['dfId', 'dfName', 'importedDsCount', 'wrangledDsCount'])
             assert r.status_code == 200, r.status_code
 
     elif method == 'delete':
         if len(words) == 2:
             # delete all datasets --> forbidden 403
-            r = requests.delete('http://%s:%s/api/preparationdatasets' % (server, port), headers=hdr)
+            r = req_delete('preparationdatasets')
             print json.dumps(r.json(), sort_keys=True, indent=4)
         else:
             # delete a dataset
             dsId = get_uuid(words[2])
-            r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), headers=hdr)
+            r = req_delete('preparationdatasets/%s' % dsId)
             print json.dumps(r.json(), sort_keys=True, indent=4)
-
-            print 'response status code: ', r.status_code
             if r.status_code == 200:
                 reg_del(dsId)
     else:
@@ -249,25 +268,24 @@ def handle_dataflow(words):
         print '<<< post dataflows request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
 
-        r = requests.post('http://%s:%s/api/preparationdataflows' % (server, port), json.dumps(d), headers=hdr)
+        r = req_post('preparationdataflows', json.dumps(d))
 
         print '<<< post datasets response >>>'
         print json.dumps(r.json(), sort_keys=True, indent=4)
 
-        print 'response status code: ', r.status_code
         assert r.status_code == 201, r.status_code
         reg_append('dataflow', r.json()['dfName'], r.json()['dfId'], r.json()['createdTime'])
 
     elif method == 'get':
         if len(words) == 2:
             # dataflow listing
-            r = requests.get('http://%s:%s/api/preparationdataflows' % (server, port), headers=hdr)
+            r = req_get('preparationdataflows')
 
             dataflows = r.json()['_embedded']['preparationdataflows']
             for dataflow in dataflows:
                 datasets_href = dataflow['_links']['datasets']['href']
                 r = requests.get(datasets_href, headers=hdr)
-
+                check_response(r)
                 datasets = r.json()['_embedded']['preparationdatasets']
                 pruned_datasets = []
                 for dataset in datasets:
@@ -280,7 +298,7 @@ def handle_dataflow(words):
         else:
             # get dataflow detail
             dsId = get_uuid(words[2])
-            r = requests.get('http://%s:%s/api/preparationdataflows/%s' % (server, port, dsId), headers=hdr)
+            r = req_get('preparationdataflows/%s' % dsId)
             dataflow = r.json()
 
             datasets_href = dataflow['_links']['datasets']['href']
@@ -299,15 +317,14 @@ def handle_dataflow(words):
     elif method == 'delete':
         if len(words) == 2:
             # delete all dataflows --> forbidden 403
-            r = requests.delete('http://%s:%s/api/preparationdataflows' % (server, port), headers=hdr)
+            r = req_delete('preparationdataflows')
             print json.dumps(r.json(), sort_keys=True, indent=4)
         else:
             # delete a dataflow
             dsId = get_uuid(words[2])
-            r = requests.delete('http://%s:%s/api/preparationdataflows/%s' % (server, port, dsId), headers=hdr)
+            r = req_delete('preparationdataflows/%s' % dsId)
             print json.dumps(r.json(), sort_keys=True, indent=4)
 
-            print 'response status code: ', r.status_code
             if r.status_code == 200:
                 reg_del(dsId)
     else:
@@ -334,7 +351,7 @@ def handle_transform(words):
 
         print '<<< post transform request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
-        r = requests.post('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, importedDsId), json.dumps(d), headers=hdr)
+        r = req_post('preparationdatasets/%s/transform' % importedDsId, json.dumps(d))
 
         print '<<< post transtorm response >>>'
         d = r.json()
@@ -342,18 +359,12 @@ def handle_transform(words):
                    ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
                    ['dsName', 'dsId', 'importType', 'queryStmt'])
 
-        print 'response status code: ', r.status_code
-        if 'errorMsg' in d:
-            print_error(d)
-            return
-
         wrangledDsId = d['wrangledDsId']
         createdTime = get_createdTime(wrangledDsId)
         reg_append('WRANGLED', get_dsName(wrangledDsId), wrangledDsId, createdTime)
 
         # upstream is mandatory
-        r = requests.post('http://%s:%s/api/preparationdataflows/%s/datasets/%s/upstream/%s' % \
-                          (server, port, dfId, wrangledDsId, importedDsId), headers=hdr)
+        r = req_post('preparationdataflows/%s/datasets/%s/upstream/%s' % (dfId, wrangledDsId, importedDsId))
         assert r.status_code == 201, r.status_code
 
     elif method == 'get':
@@ -368,7 +379,7 @@ def handle_transform(words):
         print '<<< get transtorm request >>>'
         print 'GET http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId)
 
-        r = requests.get('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId), headers=hdr)
+        r = req_get('preparationdatasets/%s/transform' % wrangledDsId)
 
         print '<<< get transtorm response >>>'
         process_transform_response(r, verbose, words)
@@ -387,7 +398,7 @@ def handle_transform(words):
 
         print '<<< put transform request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
-        r = requests.put('http://%s:%s/api/preparationdatasets/%s/transform' % (server, port, wrangledDsId), json.dumps(d), headers=hdr)
+        r = req_put('preparationdatasets/%s/transform' % wrangledDsId, json.dumps(d))
 
         print '<<< put transtorm response >>>'
         process_transform_response(r, verbose, words)
@@ -409,7 +420,7 @@ def handle_transform(words):
 
         print '<<< put transform preview request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
-        r = requests.put('http://%s:%s/api/preparationdatasets/%s/transform/preview' % (server, port, wrangledDsId), json.dumps(d), headers=hdr)
+        r = req_put('preparationdatasets/%s/transform/preview' % wrangledDsId, json.dumps(d))
 
         print '<<< put transtorm preview response >>>'
         process_transform_response(r, verbose, words, join_preview=True)
@@ -463,53 +474,48 @@ def handle_snapshot(words):
         print '<<< transform snapshot request >>>'
         print json.dumps(d, sort_keys=True, indent=4)
 
-        r = requests.post('http://%s:%s/api/preparationdatasets/%s/transform/snapshot' % (server, port, wrangledDsId), \
-                          data=json.dumps(d), headers=hdr)
+        r = req_post('preparationdatasets/%s/transform/snapshot' % wrangledDsId, data=json.dumps(d))
 
         print '<<< transform snapshot response >>>'
         d = r.json()
         print_dict(d, verbose, keep_list=['ssId'])
-        print 'response status code: ', r.status_code
 
         for dsId in d['fullDsIds']:
             print '<<< temp dataset delete request >>>'
-            r = requests.delete('http://%s:%s/api/preparationdatasets/%s' % (server, port, dsId), data=json.dumps(d), headers=hdr)
+            r = req_delete('preparationdatasets/%s' % dsId)
             print '<<< temp dataset delete response >>>'
             print 'full dataset ' + r.json() + ' has been deleted.'
-            print 'response status code: ', r.status_code
 
         print '<<< snapshot get request >>>'
         ssId = d['ssId']
-        r = requests.get('http://%s:%s/api/preparationsnapshots/%s?projection=detail' % (server, port, ssId), data=json.dumps(d), headers=hdr)
+        r = req_get('preparationsnapshots/%s?projection=detail' % ssId)
         print '<<< transform snapshot response >>>'
         d = r.json()
         print_dict(d, verbose, \
                    ['_links', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
                    ['ssName', 'elapsedTime'])
 
-        print 'response status code: ', r.status_code
         if r.status_code == 200:
             reg_append('snapshot', d['ssName'], ssId, d['launchTime'])
 
     elif method == 'delete':
         if len(words) == 2:
             # delete all snapshots --> forbidden 403
-            r = requests.delete('http://%s:%s/api/preparationsnapshots' % (server, port), headers=hdr)
+            r = req_delete('preparationsnapshots')
             print json.dumps(r.json(), sort_keys=True, indent=4)
         else:
             # delete a snapshot
             ssId = get_uuid(words[2])
-            r = requests.delete('http://%s:%s/api/preparationsnapshots/%s' % (server, port, ssId), headers=hdr)
+            r = req_delete('preparationsnapshots/%s' % ssId)
             print json.dumps(r.json(), sort_keys=True, indent=4)
 
-            print 'response status code: ', r.status_code
             if r.status_code == 200:
                 reg_del(ssId)
 
     elif method == 'get':
         if len(words) == 2:
             # snapshot listing
-            r = requests.get('http://%s:%s/api/preparationsnapshots' % (server, port), headers=hdr)
+            r = req_get('preparationsnapshots')
             snapshots = r.json()['_embedded']['preparationsnapshots']
             for d in snapshots:
                 print_dict(d, verbose, ['_links'], ['ssName', 'ssId', 'dataset'])
@@ -517,25 +523,27 @@ def handle_snapshot(words):
         else:
             # get snapshot detail
             ssId = get_uuid(words[2])
-            r = requests.get('http://%s:%s/api/preparationsnapshots/%s?projection=detail' % (server, port, ssId), headers=hdr)
+            r = req_get('preparationsnapshots/%s?projection=detail' % ssId)
             d = r.json()
             d['ssId'] = ssId
             print_dict(d, verbose, ['_links'], ['ssName', 'ssId', 'dsName', 'launchTime', 'elapsedTime', 'dsName'])
 
             dataset_href = d['_links']['dataset']['href']
             r = requests.get(dataset_href, headers=hdr)
+            check_response(r)
             d = r.json()
 
             wrangledDsId = d['dsId']
-            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, wrangledDsId), headers=hdr)
+            r = req_get('preparationdatasets/%s' % wrangledDsId)
             d = r.json()
             print_dict(d, verbose, ['_links'], ['dsId', 'dsName', 'dsType', 'createdTime', 'dsName'])
 
             r = requests.get(d['_links']['upstreams']['href'], headers=hdr)
+            check_response(r)
             d = r.json()
 
             importedDsId = d['_embedded']['preparationstreams'][0]['upstreamDsId']
-            r = requests.get('http://%s:%s/api/preparationdatasets/%s' % (server, port, importedDsId), headers=hdr)
+            r = req_get('preparationdatasets/%s' % importedDsId)
             d = r.json()
 
             if d['dsType'] == 'IMPORTED' and d['importType'] == 'HIVE':

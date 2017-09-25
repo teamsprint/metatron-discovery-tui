@@ -68,7 +68,7 @@ def req_get(url_detail):
     check_response(r)
     return r
 
-def req_post(url_detail, data):
+def req_post(url_detail, data=None):
     r = requests.post('http://%s:%s/api/%s' % (server, port, url_detail), data, headers=hdr)
     check_response(r)
     return r
@@ -219,7 +219,7 @@ def handle_dataset(words):
             dsIds = {}
             dsIds['dsIds'] = []
             dsIds['dsIds'].append(r.json()['dsId'])
-            r = req_post('preparationdataflows/%s/add_datasets' % d['creatorDfId'], data=json.dumps(dsIds), headers=hdr)
+            r = req_post('preparationdataflows/%s/add_datasets' % d['creatorDfId'], data=json.dumps(dsIds))
 
             print '<<< add_datasets response >>>'
             print_dict(r.json(), verbose, \
@@ -365,6 +365,7 @@ def handle_transform(words):
 
         # upstream is mandatory
         r = req_post('preparationdataflows/%s/datasets/%s/upstream/%s' % (dfId, wrangledDsId, importedDsId))
+        check_response(r)
         assert r.status_code == 201, r.status_code
 
     elif method == 'get':

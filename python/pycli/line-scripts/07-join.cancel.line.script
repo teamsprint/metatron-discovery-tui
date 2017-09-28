@@ -1,0 +1,72 @@
+ds post
+
+store 04
+select * from store limit 50
+df post
+flow 04
+[0]
+
+tr post
+[0]
+[1]
+tr get [2]
+tr put [2]
+append
+rename col:store_code to:'a'
+ds post
+[1]
+contract 04
+select * from contract1 limit 200
+tr post
+[3]
+[1]
+tr get [4]
+tr put [4]
+append
+rename col:product_01_code to:'p1'
+tr put [4]
+append
+rename col:product_02_code to:'p2'
+tr put [4]
+append
+rename col:product_03_code to:'p3'
+tr put [4]
+append
+rename col:product_04_code to:'p4'
+tr put [4]
+append
+merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
+ds post
+[1]
+product 04
+select * from product limit 200
+tr post
+[5]
+[1]
+tr get [6]
+tr put [6]
+append
+rename col:product_01_code to:'p1'
+tr put [6]
+append
+rename col:product_02_code to:'p2'
+tr put [6]
+append
+rename col:product_03_code to:'p3'
+tr put [6]
+append
+rename col:product_04_code to:'p4'
+tr put [6]
+append
+merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
+tr preview [4]
+append
+join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]
+tr preview [4]
+cancel
+tr preview [4]
+append
+join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]
+tr put [4]
+append
+join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]

@@ -4,6 +4,9 @@
 import json
 import sys
 
+import dateutil.parser
+import pytz
+
 line_script_file = None
 
 reg = []
@@ -24,6 +27,13 @@ def reg_del(uuid):
             reg.remove(d)
             reg_cnt -= 1
             return
+
+def reg_localize():
+    local_tz = pytz.timezone('Asia/Seoul')
+    for d in reg:
+        d['local_dt'] = dateutil.parser.parse(d['createdTime']).astimezone(local_tz)
+        d['createdTime'] = d['local_dt'].strftime('%Y-%m-%d %H:%M:%S')
+
 
 def keep(orig_d, keep_list):
     new_d = dict()
@@ -69,7 +79,7 @@ help = { "rename"   : "rename col: speed to: 'HP'",
          'nest'     : "nest: col: year, month, day into: map as 'map_birth'",
          'unnest'   : "unnest: col: map_birth into: map idx: 'year'",
          'header'   : "header rownum: 1",
-         'join'     : "join leftSelectCol: itemNo,name,speed rigthSelectCol: itemNo,name,weight condition: itemNo=itemNo && weight=weight joinType: ‘inner’ dataset2: [2]",
+         'join'     : "join leftSelectCol: itemNo,name,speed rigthSelectCol: itemNo,name,weight condition: itemNo=itemNo && weight=weight joinType: 'inner' dataset2: [2]",
          'union'    : "union masterCol: itemNo, weight, speed dataset2: [4], [6]",
          'countpattern': "countpattern: col: country on: [a-z] ignoreCase: true",
          'sort'     : "sort order: col1, col2",

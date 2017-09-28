@@ -2,10 +2,11 @@
 #encoding:utf8
 
 import argparse
+import pprint
+from time import gmtime, strftime
 
 import requests
 import requests.auth
-from time import gmtime, strftime
 
 import util
 from util import *
@@ -106,9 +107,11 @@ def get_dataflow_href(dfId):
 
 def handle_registry(words):
     if len(words) == 1:
+        util.reg_localize()
+        reg_sorted = sorted(reg, key=lambda k: k['local_dt'].strftime('%s'))
         for i in range(0, util.reg_cnt):
-            d = util.reg[i]
-            print '[%d]' % i, 'type=', d['type'], 'name=', d['name'], 'uuid=', d['uuid'], 'createdTime=', d['createdTime']
+            d = reg_sorted[i]
+            print '[%d]\t%s  %-20s %s %s' % (i, d['type'], d['name'], d['createdTime'], d['uuid'])
     elif words[1] == 'clear':
         for i in range(0, util.reg_cnt):
             d = util.reg[i]
@@ -137,6 +140,11 @@ def handle_registry(words):
 
         del util.reg[:]
         util.reg_cnt = 0
+
+def show_cache_info():
+    r = req_get('preparationdatasets/cacheInfo')
+    check_response(r)
+    pprint.pprint(r.json())
 
 def handle_set(words):
     global verbose
@@ -567,6 +575,8 @@ while True:
             break
         elif cmd in ['registry', 'reg', 're', 'r']:
             handle_registry(words)
+        elif cmd in ['cache', 'c']:
+            show_cache_info()
         elif cmd in ['set']:
             handle_set(words)
         elif cmd in ['datasets', 'dataset', 'ds']:

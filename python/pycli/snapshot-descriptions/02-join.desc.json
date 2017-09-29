@@ -1,0 +1,34 @@
+{
+    "dataset2": [
+        {
+            "sql": "SELECT * from product limit 300",
+            "dsName": "product",
+            "rules": [
+                "rename col:product_01_code to:'p1'",
+                "rename col:product_02_code to:'p2'",
+                "rename col:product_03_code to:'p3'",
+                "rename col:product_04_code to:'p4'",
+                "merge col:p1,p2,p3,p4 with:'_' as:'prod_code"
+            ]
+        }
+    ],
+    "sql": "SELECT * from contract1 limit 300",
+    "dsName": "contract",
+    "rules": [
+        "rename col:product_01_code to:'p1'",
+        "rename col:product_02_code to:'p2'",
+        "rename col:product_03_code to:'p3'",
+        "rename col:product_04_code to:'p4'",
+        "merge col:p1,p2,p3,p4 with:'_' as:'prod_code",
+        "join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: product"
+    ],
+    "charset": "UTF-8",
+    "dbName": "default",
+    "tblName": "snapshot_join",
+    "format": "ORC",
+    "compression": "SNAPPY",
+    "ssType": "HIVE",
+    "mode": "OVERWRITE",
+    "partKeys": [],
+    "extHdfsDir": "hdfs://localhost:9000/tmp/hdfsDir"
+}

@@ -3,6 +3,7 @@
 
 import json
 import sys
+import os
 
 import dateutil.parser
 import pytz
@@ -233,6 +234,29 @@ def process_transform_response(r, verbose, words, join_preview=False):
     print 'response status code: ', r.status_code
     assert r.status_code == 200, r.status_code
 
+def replace_dataset2(rule):
+    datasets = []
+    words = rule.split()
+
+    clause_began = False
+    for word in words:
+        if clause_began:
+            if word[:-1] == ':':
+                break
+            else:
+                datasets.append(word.replace(',','').strip())
+        else:
+            if word == 'dataset2:':
+                clause_began = True
+
+    skip = len('dataset2') + 1
+    start = rule.find('dataset2:')
+    for i, dataset in enumerate(datasets):
+        offset = rule.find(dataset, start + skip)
+        rule = '%s[%d]%s' % (rule[:start + skip], 4 + i * 2, rule[offset + skip + len(dataset):])
+
+    return rule
+
 def run_snapshot_descripton_file(desc_filename):
     global line_script_file
 
@@ -248,14 +272,41 @@ def run_snapshot_descripton_file(desc_filename):
         print >> f, d['dsName']
         print >> f, d['sql']
         print >> f, 'df post'
-        print >> f, 'tmp df for %s' % desc_filename
+        print >> f, os.path.basename(desc_filename)
         print >> f, '[0]'
         print >> f
+
         print >> f, 'tr post'
         print >> f, '[0]'
         print >> f, '[1]'
 
+        # [0] -> initial imported dataset
+        # [1] -> dataflow
+        # [2] -> master wrangled dataset
+
+        if 'dataset2' in d:
+            for i, d2 in enumerate(d['dataset2']):
+                print >> f, 'ds post'
+                print >> f
+                print >> f, d2['dsName']
+                print >> f, d2['sql']           # create [3] -> 2nd imported dataset ([5], [7], ..)
+
+                print >> f, 'tr post'
+                print >> f, '[%d]' % (3 + i * 2)    # create [4] -> 2nd wrangled dataset ([6], [8], ..)
+                print >> f, '[1]'
+
+                for rule in d2['rules']:
+                    print >> f, 'tr put [%d]' % (4 + i * 2)
+                    print >> f, 'append'
+                    print >> f, rule
+
         for rule in d['rules']:
+            if rule.find('dataset2') >= 0:
+                rule = replace_dataset2(rule)
+            if rule.startswith('join'):
+                print >> f, 'tr preview [2]'
+                print >> f, 'append'
+                print >> f, rule
             print >> f, 'tr put [2]'
             print >> f, 'append'
             print >> f, rule

@@ -21,6 +21,7 @@ export get_file_content_js="${lib_dir}/tool-get_file_content.js";
 export get_preview_js="${lib_dir}/tool-get_preview.js";
 export get_preview_hive_js="${lib_dir}/tool-get_preview_hive.js";
 export get_snapshot_js="${lib_dir}/tool-get_snapshot.js";
+export get_upstream_js="${lib_dir}/tool-get_upstream.js";
 export get_transform_js="${lib_dir}/tool-get_transform.js";
 export get_transform_count_js="${lib_dir}/tool-get_transform_count.js";
 export get_transform_search_js="${lib_dir}/tool-get_transform_search.js";

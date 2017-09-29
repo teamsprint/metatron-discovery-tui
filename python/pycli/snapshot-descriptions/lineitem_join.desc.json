@@ -4,7 +4,7 @@
             "sql": "SELECT * from tpch.supplier",
             "dsName": "product",
             "rules": [
-                "rename col: s_suppkey to:'joinCol'",
+                "rename col: s_suppkey to:'joinCol'"
             ]
         }
     ],
@@ -12,7 +12,7 @@
     "dsName": "contract",
     "rules": [
         "rename col: l_suppkey to:'joinCol'",
-        "join leftSelectCol: l_orderkey, l_partkey, joinCol, l_returnflag, l_linestatus, l_shipdate rightSelectCol: s_name, s_address, s_phone, joinCol condition: joinCol=joinCol joinType:'inner' dataset2: product"
+        "join leftSelectCol: l_orderkey, l_partkey, joinCol, l_returnflag, l_linestatus, l_shipdate rightSelectCol: s_name, s_address, s_phone, s_suppkey condition: joinCol=s_suppkey joinType:'inner' dataset2: product"
     ],
     "charset": "UTF-8",
     "dbName": "default",
@@ -22,5 +22,5 @@
     "ssType": "HIVE",
     "mode": "OVERWRITE",
     "partKeys": [],
-    "extHdfsDir": "hdfs://localhost:9000/tmp/hdfsDir"
+    "extHdfsDir": "hdfs://metatron/tmp/hdfsDir"
 }

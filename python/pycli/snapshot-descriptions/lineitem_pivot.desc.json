@@ -1,0 +1,16 @@
+{
+    "sql": "SELECT * from tpch.lineitem",
+    "dsName": "tpch1_aggr",
+    "rules": [
+        "pivot col: l_returnflag,l_linestatus value: 'count()','sum(l_quantity)', 'avg(l_quantity)' group: l_returnflag,l_linestatus,l_quantity"
+    ],
+    "charset": "UTF-8",
+    "dbName": "default",
+    "tblName": "test_snapshot_description1",
+    "format": "ORC",
+    "compression": "SNAPPY",
+    "ssType": "HIVE",
+    "mode": "OVERWRITE",
+    "partKeys": [],
+    "extHdfsDir": "hdfs://metatron/tmp/hdfsDir"
+}

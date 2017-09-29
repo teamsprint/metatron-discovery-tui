@@ -1,0 +1,16 @@
+{
+    "sql": "SELECT * from tpch.supplier",
+    "dsName": "tpch1_aggr",
+    "rules": [
+        "window value: 'first_value(s_acctbal)' order: s_suppkey  partition: s_nationkey"
+    ],
+    "charset": "UTF-8",
+    "dbName": "default",
+    "tblName": "test_snapshot_description1",
+    "format": "ORC",
+    "compression": "SNAPPY",
+    "ssType": "HIVE",
+    "mode": "OVERWRITE",
+    "partKeys": [],
+    "extHdfsDir": "hdfs://metatron/tmp/hdfsDir"
+}

@@ -30,6 +30,5 @@ append
 union masterCol: store_code, detail_store_code, customer_id dataset2: [5], [6]
 ss post [4]
 default
-test_union
+test_line_script_09
 
-hdfs://localhost:9000/tmp/hdfsDir

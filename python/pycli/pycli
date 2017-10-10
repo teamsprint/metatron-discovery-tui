@@ -223,7 +223,7 @@ def handle_dataset(words):
         if r.status_code == 201:
             reg_append('IMPORTED', r.json()['dsName'], r.json()['dsId'], r.json()['createdTime'])
 
-        if d['creatorDfId'] != '':
+        if 'creatorDfId' in d:
             dsIds = {}
             dsIds['dsIds'] = []
             dsIds['dsIds'].append(r.json()['dsId'])
@@ -469,10 +469,6 @@ def handle_snapshot(words):
             if s == '':
                 break
             d['partKeys'].append(s)
-
-        s = get_line('enter extHdfsDir: ')
-        if s == '': return
-        d['extHdfsDir'] = s
 
         d['charset'] = 'UTF-8'
         d['format'] = 'ORC'

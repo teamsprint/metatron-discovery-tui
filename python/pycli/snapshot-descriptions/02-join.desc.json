@@ -24,11 +24,10 @@
     ],
     "charset": "UTF-8",
     "dbName": "default",
-    "tblName": "snapshot_join",
+    "tblName": "test_snapshot_description_02",
     "format": "ORC",
     "compression": "SNAPPY",
     "ssType": "HIVE",
     "mode": "OVERWRITE",
-    "partKeys": [],
-    "extHdfsDir": "hdfs://localhost:9000/tmp/hdfsDir"
+    "partKeys": []
 }

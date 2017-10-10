@@ -38,6 +38,5 @@ append
 merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
 ss post [4]
 default
-test_snapshot
+test_line_script_02
 
-hdfs://localhost:9000/tmp/hdfsDir

@@ -1,14 +1,14 @@
 ds post
 
-store 1/3 (2500)
+store 08 1/3 (2500)
 select * from store limit 2500
 ds post
 
-store 2/3 (2500)
+store 08 2/3 (2500)
 select * from store limit 2500
 ds post
 
-store 3/3 (2500)
+store 08 3/3 (2500)
 select * from store limit 2500
 df post
 flow 08 (union)

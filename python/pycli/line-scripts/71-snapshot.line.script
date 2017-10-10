@@ -15,6 +15,5 @@ append
 rename col:store_code to:a
 ss post [2]
 default
-snapshot 71
+test_line_script_71
 
-hdfs://localhost:9000/tmp/hdfsDir

@@ -319,8 +319,6 @@ def run_snapshot_descripton_file(desc_filename):
             print >> f, partKey
         print >> f
 
-        print >> f, d['extHdfsDir']
-
         f.close()
         line_script_file = open(tmp_line_script, 'r')
 

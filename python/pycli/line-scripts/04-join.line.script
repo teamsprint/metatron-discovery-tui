@@ -65,3 +65,7 @@ join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectC
 tr put [4]
 append
 join leftSelectCol: p1,p2,p3,p4,prod_code,customer_id,contract_date rightSelectCol: p1,p2,p3,p4,prod_code,product_name condition: prod_code=prod_code joinType:'inner' dataset2: [6]
+ss post [4]
+default
+test_line_script_04
+

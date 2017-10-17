@@ -1,42 +1,43 @@
+############################
+# create dataset: contract #
+############################
 ds post
-
-store 02
-select * from store limit 50
-df post
-flow 02
-[0]
-
-tr post
-[0]
-[1]
-tr get [2]
-tr put [2]
-append
-rename col:store_code to:'a'
-ds post
-[1]
 contract 02
 select * from contract1 limit 50
-tr post
-[3]
-[1]
-tr get [4]
-tr put [4]
+###################
+# create dataflow #
+###################
+df post
+flow 02
+<contract>
+
+df get <flow>  # create contract [W]
+#############
+# transform #
+#############
+tr get <contract>
+tr put <contract>
+append
+rename col:store_code to:'a'
+tr put <contract>
 append
 rename col:product_01_code to:'p1'
-tr put [4]
+tr put <contract>
 append
 rename col:product_02_code to:'p2'
-tr put [4]
+tr put <contract>
 append
 rename col:product_03_code to:'p3'
-tr put [4]
+tr put <contract>
 append
 rename col:product_04_code to:'p4'
-tr put [4]
+tr put <contract>
 append
 merge col:p1,p2,p3,p4 with:'_' as:'prod_code'
-ss post [4]
-default
-test_line_script_02
-
+############
+# snapshot #
+############
+ss post <contract>
+default              # dbname
+test_line_script_02  # table name
+                     # partition keys

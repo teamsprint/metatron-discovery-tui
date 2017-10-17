@@ -1,37 +1,45 @@
+#########################
+# create dataset: store #
+#########################
 ds post
-
 store 53
-select * from store
+select * from store limit 50
+###################
+# create dataflow #
+###################
 df post
 flow 53
-[0]
+<store>
 
-tr post
-[0]
-[1]
-tr put [2]
+df get <flow>  # create store [W]
+tr get <store>
+tr put <store>
 append
 rename col:store_code to:a
-tr put [2]
+tr put <store>
 append
 rename col:detail_store_code to:b
-tr put [2]
+tr put <store>
 append
 rename col:customer_id to:c
-tr put [2]
+tr put <store>
 undo
-tr put [2]
+tr put <store>
 undo
-tr get [2]
-tr put [2]
+tr get <store>
+tr put <store>
 redo
-tr put [2]
+tr put <store>
 update
 rename col:customer_id to:x
-tr put [2]
+tr put <store>
 undo
-tr put [2]
+tr put <store>
 undo
-tr put [2]
+tr put <store>
 update
 rename col:customer_id to:y
+ss post <store>
+default              # dbname
+test_line_script_53  # table name
+                     # partition keys

@@ -1,16 +1,23 @@
+#########################
+# create dataset: store #
+#########################
 ds post
-
 store 52
-select * from store
+select * from store limit 50
+###################
+# create dataflow #
+###################
 df post
 flow 52
-[0]
+<store>
 
-tr post
-[0]
-[1]
-tr get [2]
-tr put [2]
+df get <flow>  # create store [W]
+tr get <store>
+tr put <store>
 append
 rename col: store_code to: a
-tr get [2]
+tr get <store>
+ss post <store>
+default              # dbname
+test_line_script_52  # table name
+                     # partition keys

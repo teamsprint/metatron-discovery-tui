@@ -2,34 +2,45 @@
 # create dataset: contract #
 ############################
 ds post
-contract 10
+contract 61
 select * from contract1 limit 200
 ###########################
 # create dataset: product #
 ###########################
 ds post
-product 10
+product 61
 select * from product limit 200
 df post
 ###################
 # create dataflow #
 ###################
-flow 10
+flow 61
 <contract>
 <product>
 
-df get <flow>  # create contract [W], product [W]
+df get <flow>  # contract [W] ==> [3], product [W] ==> [4]
 ############
 # contract #
 ############
 tr get <contract>
+tr put <contract>
+append
+replace col: contract_date with: '$1$2' on: /(.+)-(.+)-(.+)/ global: true
+tr put <contract>
+append
+replace col: contract_id with 'contract_id_' on: 'cid000000' global: true
+tr put <contract>
+append
+replace col: customer_id with: 'asdfew' on: 'O' global: true
+tr put <contract>
+delete
+tr put <contract>
+delete
+tr put <contract>
+delete
 tr preview <contract>
 append
 join leftSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,customer_id,contract_date rightSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,product_name condition: product_01_code=product_01_code joinType:'inner' dataset2: <product>
 tr put <contract>
 append
 join leftSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,customer_id,contract_date rightSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,product_name condition: product_01_code=product_01_code joinType:'inner' dataset2: <product>
-ss post <contract>
-default
-test_line_script_10
-

@@ -1,19 +1,22 @@
+#########################
+# create dataset: store #
+#########################
 ds post
-
 store 71
 select * from store
+###################
+# create dataflow #
+###################
 df post
 flow 71
-[0]
+<store>
 
-tr post
-[0]
-[1]
-tr get [2]
-tr put [2]
+df get <flow>  # create store [W]
+tr get <store>
+tr put <store>
 append
 rename col:store_code to:a
-ss post [2]
-default
-test_line_script_71
-
+ss post <store>
+default              # dbname
+test_line_script_71  # table name
+                     # partition keys

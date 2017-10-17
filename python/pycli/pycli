@@ -5,6 +5,7 @@ import argparse
 import pprint
 from time import gmtime, strftime
 
+import dateutil.parser
 import requests
 import requests.auth
 
@@ -18,13 +19,13 @@ parser.add_argument('-s', '--server', help='API server hostname (default: localh
 parser.add_argument('-p', '--port', help='API server port (default: 8180)', default='8180')
 parser.add_argument('-l', '--line-script', help='line script file')
 parser.add_argument('-d', '--snapshot-description', help='snapshot descrpition file')
-args = parser.parse_args()
+util.args = parser.parse_args()
 
-verbose = 'more' if args.verbose_more else 'on' if args.verbose else 'off'
-server = args.server
-port = args.port
-line_script = args.line_script
-desc_filename = args.snapshot_description
+verbose = 'more' if util.args.verbose_more else 'on' if util.args.verbose else 'off'
+server = util.args.server
+port = util.args.port
+line_script = util.args.line_script
+desc_filename = util.args.snapshot_description
 
 print 'server=', server
 print 'port=', port
@@ -50,19 +51,6 @@ hdr = {}
 hdr['Authorization'] = "bearer " + get_token()
 hdr['Content-Type'] = 'application/json'
 hdr['Accept'] = 'application/json'
-
-def get_uuid(s):
-    if s[0] == '[':
-        reg_idx = int(s[1:-1])
-        return util.reg[reg_idx]['uuid']
-    return s
-
-def check_response(r):
-    print 'response status code: ', r.status_code
-    d = r.json()
-    if 'errorMsg' in d:
-        print_error(d)
-        exit(-1)
 
 def req_get(url_detail):
     r = requests.get('http://%s:%s/api/%s' % (server, port, url_detail), headers=hdr)
@@ -107,10 +95,13 @@ def get_dataflow_href(dfId):
 
 def handle_registry(words):
     if len(words) == 1:
-        util.reg_localize()
-        reg_sorted = sorted(reg, key=lambda k: k['local_dt'].strftime('%s'))
+        global reg
+        for d in reg:
+            d['createdTimeAsDate'] = dateutil.parser.parse(d['createdTime'])
+
+        # reg = sorted(reg, key=lambda k: k['createdTimeAsDate'].strftime('%s'))
         for i in range(0, util.reg_cnt):
-            d = reg_sorted[i]
+            d = reg[i]
             print '[%d]\t%s  %-20s %s %s' % (i, d['type'], d['name'], d['createdTime'], d['uuid'])
     elif words[1] == 'clear':
         for i in range(0, util.reg_cnt):
@@ -187,16 +178,6 @@ def handle_dataset(words):
 
     elif method == 'post':
         d = {}
-
-        if len(words) == 3:
-            s = words[2]
-        else:
-            s = get_line('enter dfId (press enter if none): ')
-
-        if s != '':
-            d['creatorDfId'] = get_uuid(s)
-            d['dataflows'] = []
-            d['dataflows'].append(get_dataflow_href(get_uuid(s)))
 
         s = get_line('enter dsName: ')
         if s == '': return
@@ -558,6 +539,7 @@ def handle_snapshot(words):
 
 # interactive shell start!
 while True:
+    # skip stripping for ^D to work
     line = get_line('pycli> ', strip=False)
     if not line:
         break

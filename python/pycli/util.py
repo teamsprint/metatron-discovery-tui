@@ -6,19 +6,44 @@ import sys
 import os
 
 import dateutil.parser
-import pytz
 
 line_script_file = None
+args = None
 
 reg = []
 reg_cnt = 0
 
 def reg_append(type, name, uuid, createdTime):
     global reg_cnt
+
     for d in reg:
         if d['uuid'] == uuid:
             return
-    reg.append({'type': type, 'name': name, 'uuid': uuid, 'createdTime': createdTime})
+
+    offset = reg_cnt
+
+    for i, d in enumerate(reg):
+        d_time = dateutil.parser.parse(d['createdTime'])
+        new_time = dateutil.parser.parse(createdTime)
+        if new_time < d_time:
+            offset = i
+            break
+        elif new_time == d_time:
+            if type == 'IMPORTED':
+                offset = i
+                break
+            elif type == 'dataflow' and d['type'] != 'IMPORTED':
+                offset = i
+                break
+            elif type == 'WRANGLED' and d['type'] != 'IMPORTED' and d['type'] != 'dataflow':
+                offset = i
+                break
+            else:   # snapshot
+                continue
+        else:
+            continue
+
+    reg.insert(offset, {'type': type, 'name': name, 'uuid': uuid, 'createdTime': createdTime})
     reg_cnt += 1
 
 def reg_del(uuid):
@@ -28,13 +53,6 @@ def reg_del(uuid):
             reg.remove(d)
             reg_cnt -= 1
             return
-
-def reg_localize():
-    local_tz = pytz.timezone('Asia/Seoul')
-    for d in reg:
-        d['local_dt'] = dateutil.parser.parse(d['createdTime']).astimezone(local_tz)
-        d['createdTime'] = d['local_dt'].strftime('%Y-%m-%d %H:%M:%S')
-
 
 def keep(orig_d, keep_list):
     new_d = dict()
@@ -53,13 +71,26 @@ def delete(d, delete_list):
     return d
 
 def get_line(prompt, strip=True):
+    sys.stdout.write(prompt)
+
+    # enable commenting out
+    while True:
+        if line_script_file:
+            line = line_script_file.readline()
+        else:
+            line = sys.stdin.readline()
+
+        if len(line) > 0 and line[0].startswith('#'):   # comment out the line
+            continue
+
+        break
+
+    offset = line.find('#')     # comment out the rest
+    if offset >= 0:
+        line = line[:offset]
+
     if line_script_file:
-        sys.stdout.write(prompt)
-        line = line_script_file.readline()
-        print line.strip()
-    else:
-        sys.stdout.write(prompt)
-        line = sys.stdin.readline()
+        print line
 
     if strip:
         return line.strip()
@@ -89,9 +120,37 @@ help = { "rename"   : "rename col: speed to: 'HP'",
          'flatten'  : "flatten: col: regions",
          'move'     : "move col: map_birth before: column1" }
 
+def get_uuid(s):
+    if s[0] == '[':
+        reg_idx = int(s[1:-1])
+        return reg[reg_idx]['uuid']
+    elif s[0] == '<':
+        reg_name = s[1:-1]
+        uuid = 'not_found'
+        for d in reg:
+            if d['name'].find(reg_name) >= 0:
+                uuid = d['uuid']
+        return uuid
+    return s
+
 def replace_registry_no(s):
     for i, d in enumerate(reg):
         s = s.replace('[%d]' % i, "'%s'" % d['uuid'], 1)
+
+    pos = 0
+    while True:
+        start = s.find('<', pos)
+        if start < 0:
+            break
+        pos = start + 1
+        end = s.find('>', pos)
+        if end < 0:
+            print 'wrong dataset name'
+            break
+
+        dsname = s[start:end+1]
+        s = s.replace(dsname, "'" + get_uuid(dsname) + "'")
+
     return s
 
 def get_transform_args():
@@ -199,6 +258,18 @@ def print_rule_list(d):
     for i, info in enumerate(d['ruleStringInfos']):
         print ' %s [%d]: %s' % ('cur =>' if  i == d['ruleCurIdx'] else '      ', i, info['ruleString'])
 
+def check_response(r):
+    print 'response status code: ', r.status_code
+    d = r.json()
+    if r.status_code == '500' or 'errorMsg' in d:
+        print_error(d)
+        print '------------------------------------------------------------'
+        print '------------------------------------------------------------'
+        print '--------------- error occured while running ----------------', args
+        print '------------------------------------------------------------'
+        print '------------------------------------------------------------'
+        exit(-1)
+
 def process_transform_response(r, verbose, words, join_preview=False):
     d = r.json()
 
@@ -216,23 +287,27 @@ def process_transform_response(r, verbose, words, join_preview=False):
                    ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
                    ['ruleCurIdx', 'ruleCurStringInfos'])
 
-    print 'result_cnt:', len(d['matrixResponse']['columns'][0]['value'])
+    if 'matrixResponse' in d and \
+       'columns' in d['matrixResponse'] and \
+       len(d['matrixResponse']['columns']) > 0 and \
+       'value' in d['matrixResponse']['columns'][0]:
+        print 'result_cnt: %d' % len(d['matrixResponse']['columns'][0]['value'])
+    else:
+        print 'result_cnt: 0'
 
-    # print(d['matrixResponse']['columns']['type'])
-    target_cnt = 3
+    print_target_cnt = 3
     if len(words) == 4:
         try:
-            target_cnt = int(words[3])
+            print_target_cnt = int(words[3])
         except TypeError:
             pass
 
-    print_matrix(d, target_cnt)
+    print_matrix(d, print_target_cnt)
 
     print_column_list(d)
     print_rule_list(d)
 
-    print 'response status code: ', r.status_code
-    assert r.status_code == 200, r.status_code
+    check_response(r)
 
 def replace_dataset2(rule):
     datasets = []

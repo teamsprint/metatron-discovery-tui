@@ -11,7 +11,7 @@ df post
 flow 02
 <contract>
 
-df get <flow>  # create contract [W]
+df get <flow>  # register contract [W]
 #############
 # transform #
 #############

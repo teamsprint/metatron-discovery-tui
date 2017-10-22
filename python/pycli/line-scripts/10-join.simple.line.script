@@ -18,14 +18,11 @@ flow 10
 <contract>
 <product>
 
-df get <flow>  # create contract [W], product [W]
+df get <flow>  # register contract [W], product [W]
 ############
 # contract #
 ############
 tr get <contract>
-tr preview <contract>
-append
-join leftSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,customer_id,contract_date rightSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,product_name condition: product_01_code=product_01_code joinType:'inner' dataset2: <product>
 tr put <contract>
 append
 join leftSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,customer_id,contract_date rightSelectCol: product_01_code,product_02_code,product_03_code,product_04_code,product_name condition: product_01_code=product_01_code joinType:'inner' dataset2: <product>

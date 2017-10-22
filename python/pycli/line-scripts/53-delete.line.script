@@ -11,7 +11,7 @@ df post
 flow 53
 <store>
 
-df get <flow>  # create store [W]
+df get <flow>  # register store [W]
 tr get <store>
 tr put <store>
 append

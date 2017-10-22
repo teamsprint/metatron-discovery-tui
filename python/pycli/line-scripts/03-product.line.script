@@ -18,7 +18,7 @@ flow 03
 <contract>
 <product>
 
-df get <flow>  # create contract [W], product [W]
+df get <flow>  # register contract [W], product [W]
 ############
 # contract #
 ############

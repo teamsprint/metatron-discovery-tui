@@ -23,25 +23,14 @@ def reg_append(type, name, uuid, createdTime):
     offset = reg_cnt
 
     for i, d in enumerate(reg):
+        if type == 'WRANGLED' and d['type'] != 'WRANGLED':
+            continue
+
         d_time = dateutil.parser.parse(d['createdTime'])
         new_time = dateutil.parser.parse(createdTime)
-        if new_time < d_time:
+        if new_time <= d_time:
             offset = i
             break
-        elif new_time == d_time:
-            if type == 'IMPORTED':
-                offset = i
-                break
-            elif type == 'dataflow' and d['type'] != 'IMPORTED':
-                offset = i
-                break
-            elif type == 'WRANGLED' and d['type'] != 'IMPORTED' and d['type'] != 'dataflow':
-                offset = i
-                break
-            else:   # snapshot
-                continue
-        else:
-            continue
 
     reg.insert(offset, {'type': type, 'name': name, 'uuid': uuid, 'createdTime': createdTime})
     reg_cnt += 1
@@ -160,11 +149,11 @@ def get_transform_args():
         s = get_line('enter action: ')
         if s == '': return None
         d['op'] = str.upper(s)
-        if d['op'] in ['APPEND', 'UPDATE', 'DELETE', 'JUMP', 'UNDO', 'REDO', 'CANCEL']:
+        if d['op'] in ['APPEND', 'UPDATE', 'DELETE', 'JUMP', 'UNDO', 'REDO', 'PREVIEW']:
             break
-        print 'invalid transform rule:', s.split()[0], ': available: APPEND, UPDATE, DELETE, JUMP, UNDO, REDO, CANCEL'
+        print 'invalid transform rule:', s.split()[0], ': available: APPEND, UPDATE, DELETE, JUMP, UNDO, REDO, PREVIEW'
 
-    if d['op'] in ['DELETE', 'UNDO', 'REDO', 'CANCEL']:
+    if d['op'] in ['DELETE', 'UNDO', 'REDO']:
         return d
 
     if d['op'] == 'JUMP':
@@ -270,22 +259,16 @@ def check_response(r):
         print '------------------------------------------------------------'
         exit(-1)
 
-def process_transform_response(r, verbose, words, join_preview=False):
+def process_transform_response(r, verbose, words):
     d = r.json()
 
     if 'errorMsg' in d:
         print_error(d)
         return
 
-    if not join_preview:
-        # to protect matrixRespone
-        tmp = {}
-        for key in d:
-            tmp[key] = d[key]
-
-        print_dict(tmp, verbose, \
-                   ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
-                   ['ruleCurIdx', 'ruleCurStringInfos'])
+    print_dict(d, verbose, \
+               ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
+               ['ruleCurIdx', 'ruleCurStringInfos'])
 
     if 'matrixResponse' in d and \
        'columns' in d['matrixResponse'] and \
@@ -343,7 +326,6 @@ def run_snapshot_descripton_file(desc_filename):
         f = open(tmp_line_script, 'w+')
 
         print >> f, 'ds post'
-        print >> f
         print >> f, d['dsName']
         print >> f, d['sql']
         print >> f, 'df post'
@@ -378,10 +360,6 @@ def run_snapshot_descripton_file(desc_filename):
         for rule in d['rules']:
             if rule.find('dataset2') >= 0:
                 rule = replace_dataset2(rule)
-            if rule.startswith('join'):
-                print >> f, 'tr preview [2]'
-                print >> f, 'append'
-                print >> f, rule
             print >> f, 'tr put [2]'
             print >> f, 'append'
             print >> f, rule

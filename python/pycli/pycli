@@ -38,7 +38,7 @@ if desc_filename:
     print 'snapshot_description=', desc_filename
     run_snapshot_descripton_file(desc_filename)
 
-usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|delete|put|preview} [uuid]'
+usage = 'usage: {dataset|dataflow|transform|snapshot|registry|set} {post|get|delete|put} [uuid]'
 
 def get_token():
     hdr = {'Content-Type': 'application/json', 'Authorization': 'Basic cG9sYXJpc19jbGllbnQ6cG9sYXJpcw=='}
@@ -83,11 +83,6 @@ def get_createdTime(dsId):
 def get_dsName(dsId):
     r = req_get('preparationdatasets/%s' % dsId)
     return r.json()['dsName']
-
-def get_upstreamDsIds(d):
-    r = requests.get(d['_links']['upstreams']['href'], headers=hdr)
-    check_response(r)
-    return r.json()
 
 def get_dataflow_href(dfId):
     r = req_get('preparationdataflows/%s?projection=detail' % dfId)
@@ -171,10 +166,9 @@ def handle_dataset(words):
             dsId = get_uuid(words[2])
             r = req_get('preparationdatasets/%s' % dsId)
             d = r.json()
-            d['upstreamDsIds'] = get_upstreamDsIds(d)
             print_dict(r.json(), verbose, \
                        ['_links', 'matrixResponse', 'createdBy', 'createdTime', 'modifiedBy', 'modifiedTime'], \
-                       ['dsType', 'dsName', 'importType', 'queryStmt', 'totalLines', 'totalBytes', 'upstreamDsIds'])
+                       ['dsType', 'dsName', 'importType', 'queryStmt', 'totalLines', 'totalBytes'])
 
     elif method == 'post':
         d = {}
@@ -321,7 +315,7 @@ def handle_dataflow(words):
 
 def handle_transform(words):
     if len(words) == 1:
-        print 'usage: tr {post|get|put|preview} [dsId]'
+        print 'usage: tr {post|get|put} [dsId]'
         return
     method = words[1]
 
@@ -351,11 +345,6 @@ def handle_transform(words):
         wrangledDsId = d['wrangledDsId']
         createdTime = get_createdTime(wrangledDsId)
         reg_append('WRANGLED', get_dsName(wrangledDsId), wrangledDsId, createdTime)
-
-        # upstream is mandatory
-        r = req_post('preparationdataflows/%s/datasets/%s/upstream/%s' % (dfId, wrangledDsId, importedDsId))
-        check_response(r)
-        assert r.status_code == 201, r.status_code
 
     elif method == 'get':
         # load wrangled dataset
@@ -392,28 +381,6 @@ def handle_transform(words):
 
         print '<<< put transtorm response >>>'
         process_transform_response(r, verbose, words)
-
-    elif method == 'preview':
-        if len(words) == 2:
-            s = get_line('enter wrangledDsId: ')
-            if s == '': return
-            wrangledDsId = get_uuid(s)
-        else:
-            wrangledDsId = get_uuid(words[2])
-
-        d = get_transform_args()
-        if d == None:
-            return
-        elif 'ruleString' in d and str(d['ruleString']).startswith('join') == False:
-            print 'preview accepts only join rules'
-            return
-
-        print '<<< put transform preview request >>>'
-        print json.dumps(d, sort_keys=True, indent=4)
-        r = req_put('preparationdatasets/%s/transform/preview' % wrangledDsId, json.dumps(d))
-
-        print '<<< put transtorm preview response >>>'
-        process_transform_response(r, verbose, words, join_preview=True)
 
     else:
         print usage

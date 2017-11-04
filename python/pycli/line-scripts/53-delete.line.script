@@ -26,14 +26,11 @@ tr put <store>
 undo
 tr put <store>
 undo
-tr get <store>
 tr put <store>
 redo
 tr put <store>
 update
 rename col:customer_id to:x
-tr put <store>
-undo
 tr put <store>
 undo
 tr put <store>

@@ -26,17 +26,14 @@ tr put <store>
 undo
 tr put <store>
 undo
-tr get <store>
 tr put <store>
 redo
 tr put <store>
 redo
-tr get <store>
 tr put <store>
 undo
 tr put <store>
 undo
-tr get <store>
 tr put <store>
 append
 rename col:detail_store_code to:d

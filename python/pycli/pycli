@@ -382,6 +382,22 @@ def handle_transform(words):
         print '<<< put transtorm response >>>'
         process_transform_response(r, verbose, words)
 
+    elif method == 'stats' or method == 'stat':
+        if len(words) == 2:
+            s = get_line('enter wrangledDsId: ')
+            if s == '': return
+            wrangledDsId = get_uuid(s)
+        else:
+            wrangledDsId = get_uuid(words[2])
+
+        print '<<< stats transtorm request >>>'
+        print 'GET http://%s:%s/api/preparationdatasets/%s/transform/stats/0' % (server, port, wrangledDsId)
+
+        r = req_get('preparationdatasets/%s/transform/stats/0' % wrangledDsId)
+
+        print '<<< stats transtorm response >>>'
+        process_transform_response(r, verbose, words)
+
     else:
         print usage
 

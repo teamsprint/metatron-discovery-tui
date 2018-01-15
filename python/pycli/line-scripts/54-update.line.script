@@ -3,7 +3,7 @@
 #########################
 ds post
 store 54
-select * from store limit 50
+select * from default.store limit 1000
 ###################
 # create dataflow #
 ###################

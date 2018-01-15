@@ -3,13 +3,13 @@
 ############################
 ds post
 contract 04
-select * from contract1 limit 200
+select * from default.contract
 ###########################
 # create dataset: product #
 ###########################
 ds post
 product 04
-select * from product limit 200
+select * from default.product
 df post
 ###################
 # create dataflow #

@@ -3,7 +3,7 @@
 ############################
 ds post
 contract 02
-select * from contract1 limit 50
+select * from default.contract limit 50
 ###################
 # create dataflow #
 ###################

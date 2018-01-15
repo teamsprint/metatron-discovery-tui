@@ -3,7 +3,7 @@
 #########################
 ds post
 store 71
-select * from store
+select * from default.store
 ###################
 # create dataflow #
 ###################

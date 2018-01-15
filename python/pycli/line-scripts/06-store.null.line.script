@@ -3,7 +3,7 @@
 #########################
 ds post
 store 06
-select *, case when store_code = '001' then null else store_code end as x from store limit 100
+select *, case when store_code = '001' then null else store_code end as x from default.store limit 100
 ###################
 # create dataflow #
 ###################

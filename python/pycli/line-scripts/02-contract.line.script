@@ -18,9 +18,6 @@ df get <flow>  # register contract [W]
 tr get <contract>
 tr put <contract>
 append
-rename col:store_code to:'a'
-tr put <contract>
-append
 rename col:product_01_code to:'p1'
 tr put <contract>
 append
